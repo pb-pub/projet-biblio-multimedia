@@ -3,6 +3,10 @@ project(biblio LANGUAGES CXX)
 
 find_package(Qt6 6.5 REQUIRED COMPONENTS Core Widgets)
 
+# Add OpenCV
+find_package(OpenCV REQUIRED)
+include_directories(${OpenCV_INCLUDE_DIRS})
+
 qt_standard_project_setup()
 
 qt_add_executable(biblio
@@ -12,15 +16,14 @@ qt_add_executable(biblio
     mainwindow.h
     mainwindow.ui
     gamewindow.h gamewindow.cpp gamewindow.ui
-
-
-
+    camerawidget.h camerawidget.cpp camerawidget.ui
 )
 
 target_link_libraries(biblio
     PRIVATE
         Qt::Core
         Qt::Widgets
+        ${OpenCV_LIBS}  # Link OpenCV libraries
 )
 
 include(GNUInstallDirs)

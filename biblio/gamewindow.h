@@ -2,6 +2,7 @@
 #define GAMEWINDOW_H
 
 #include <QMainWindow>
+#include "camerawidget.h"
 
 namespace Ui {
 class GameWindow;
@@ -19,6 +20,7 @@ private slots:
     void on_pushButton_clicked();
 
 private:
+    CameraWidget* cameraWidget;
     Ui::GameWindow *ui;
 };
 

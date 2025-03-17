@@ -7,6 +7,17 @@ GameWindow::GameWindow(QWidget *parent)
     , ui(new Ui::GameWindow)
 {
     ui->setupUi(this);
+
+
+    // Vérifier si cameraWidget a déjà un layout
+    if (!ui->cameraWidgetUI->layout()) {
+        ui->cameraWidgetUI->setLayout(new QVBoxLayout());
+    }
+
+
+    cameraWidget = new CameraWidget(this);
+    ui->cameraWidgetUI->layout()->addWidget(cameraWidget);
+
 }
 
 GameWindow::~GameWindow()
