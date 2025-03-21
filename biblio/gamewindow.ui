@@ -14,19 +14,6 @@
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QLabel" name="label">
-    <property name="geometry">
-     <rect>
-      <x>280</x>
-      <y>230</y>
-      <width>57</width>
-      <height>14</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>game</string>
-    </property>
-   </widget>
    <widget class="QPushButton" name="pushButton">
     <property name="geometry">
      <rect>
@@ -43,10 +30,10 @@
    <widget class="QWidget" name="cameraWidgetUI" native="true">
     <property name="geometry">
      <rect>
-      <x>720</x>
+      <x>940</x>
       <y>0</y>
-      <width>561</width>
-      <height>411</height>
+      <width>341</width>
+      <height>231</height>
      </rect>
     </property>
     <widget class="QWidget" name="verticalLayoutWidget">
@@ -55,12 +42,25 @@
        <x>0</x>
        <y>0</y>
        <width>561</width>
-       <height>411</height>
+       <height>231</height>
       </rect>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout"/>
     </widget>
    </widget>
+   <widget class="QWidget" name="game" native="true">
+    <property name="geometry">
+     <rect>
+      <x>-1</x>
+      <y>-1</y>
+      <width>1280</width>
+      <height>700</height>
+     </rect>
+    </property>
+   </widget>
+   <zorder>game</zorder>
+   <zorder>pushButton</zorder>
+   <zorder>cameraWidgetUI</zorder>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
