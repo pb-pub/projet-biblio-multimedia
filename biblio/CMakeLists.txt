@@ -5,6 +5,7 @@ find_package(Qt6 6.5 REQUIRED COMPONENTS Core Widgets OpenGLWidgets)
 
 # Add OpenCV
 find_package(OpenCV REQUIRED)
+
 include_directories(${OpenCV_INCLUDE_DIRS})
 
 cmake_minimum_required(VERSION 3.16)
@@ -24,7 +25,9 @@ qt_add_executable(biblio
     mainwindow.ui
     gamewindow.h gamewindow.cpp gamewindow.ui
     camerawidget.h camerawidget.cpp camerawidget.ui
-    spherewidget.h spherewidget.cpp
+    gamewidget.h gamewidget.cpp gamewidget.ui
+    
+    fruit.h fruit.cpp
 )
 
 target_link_libraries(biblio
@@ -33,6 +36,7 @@ target_link_libraries(biblio
         Qt::Widgets
         Qt::OpenGLWidgets
         ${OpenCV_LIBS}  # Link OpenCV libraries
+        GLU
 )
 
 include(GNUInstallDirs)

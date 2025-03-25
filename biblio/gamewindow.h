@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 #include "camerawidget.h"
+#include "gamewidget.h"
 
 namespace Ui {
 class GameWindow;
@@ -16,11 +17,10 @@ public:
     explicit GameWindow(QWidget *parent = nullptr);
     ~GameWindow();
 
-private slots:
-    void on_pushButton_clicked();
 
 private:
     CameraWidget* cameraWidget;
+    GameWidget* gameWidget;
     Ui::GameWindow *ui;
 };
 

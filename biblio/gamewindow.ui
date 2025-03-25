@@ -14,65 +14,27 @@
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QPushButton" name="pushButton">
-    <property name="geometry">
-     <rect>
-      <x>0</x>
-      <y>0</y>
-      <width>80</width>
-      <height>22</height>
-     </rect>
+   <layout class="QVBoxLayout" name="verticalLayout_2">
+    <property name="spacing">
+     <number>0</number>
     </property>
-    <property name="text">
-     <string>&lt;- Back</string>
+    <property name="leftMargin">
+     <number>0</number>
     </property>
-   </widget>
-   <widget class="QWidget" name="cameraWidgetUI" native="true">
-    <property name="geometry">
-     <rect>
-      <x>940</x>
-      <y>0</y>
-      <width>341</width>
-      <height>231</height>
-     </rect>
+    <property name="topMargin">
+     <number>0</number>
     </property>
-    <widget class="QWidget" name="verticalLayoutWidget">
-     <property name="geometry">
-      <rect>
-       <x>0</x>
-       <y>0</y>
-       <width>561</width>
-       <height>231</height>
-      </rect>
-     </property>
-     <layout class="QVBoxLayout" name="verticalLayout"/>
-    </widget>
-   </widget>
-   <widget class="QWidget" name="game" native="true">
-    <property name="geometry">
-     <rect>
-      <x>-1</x>
-      <y>-1</y>
-      <width>1280</width>
-      <height>700</height>
-     </rect>
+    <property name="rightMargin">
+     <number>0</number>
     </property>
-   </widget>
-   <zorder>game</zorder>
-   <zorder>pushButton</zorder>
-   <zorder>cameraWidgetUI</zorder>
+    <property name="bottomMargin">
+     <number>0</number>
+    </property>
+    <item>
+     <widget class="QWidget" name="game" native="true"/>
+    </item>
+   </layout>
   </widget>
-  <widget class="QMenuBar" name="menubar">
-   <property name="geometry">
-    <rect>
-     <x>0</x>
-     <y>0</y>
-     <width>1280</width>
-     <height>19</height>
-    </rect>
-   </property>
-  </widget>
-  <widget class="QStatusBar" name="statusbar"/>
  </widget>
  <resources/>
  <connections/>
