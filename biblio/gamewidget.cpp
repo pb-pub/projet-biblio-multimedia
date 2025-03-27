@@ -12,7 +12,7 @@ const float MAX_DIMENSION = 10.0f;
 GameWidget::GameWidget(QWidget *parent)
     : QWidget(parent)
     , ui(new Ui::GameWidget)
-    , m_fruit(nullptr)
+    , m_fruit(std::vector<Fruit*>())
 {
     ui->setupUi(this);
     
@@ -49,7 +49,7 @@ GameWidget::GameWidget(QWidget *parent)
 
     label = new QLabel("Fruit Ninja", this);
     
-    int fontId = QFontDatabase::addApplicationFont("./../../../assets/NinjaStrike.otf");
+    int fontId = QFontDatabase::addApplicationFont("./../../../biblio/assets/NinjaStrike.otf");
     QStringList fontFamilies = QFontDatabase::applicationFontFamilies(fontId);
     if (!fontFamilies.isEmpty()) {
         QFont m_font(fontFamilies.first(), 150);
@@ -72,22 +72,15 @@ GameWidget::GameWidget(QWidget *parent)
 GameWidget::~GameWidget()
 {
     delete ui;
-    delete m_fruit;
-}
-
-Fruit* GameWidget::getFruit() const
-{
-    return m_fruit;
-}
-
-void GameWidget::setFruit(Fruit::FruitType type)
-{
-    if (m_fruit) {
-        m_fruit->setType(type);
-    } else {
-        m_fruit = new Fruit(type,textures, QTime::currentTime());
+    delete label;
+    delete[] textures;
+    for (auto fruit : m_fruit) {
+        delete fruit;
     }
-    updateFruitDisplay();
+    m_fruit.clear();
+    if (cylinder) {
+        gluDeleteQuadric(cylinder);
+    }
 }
 
 void GameWidget::updateFruitDisplay()
@@ -131,7 +124,7 @@ void GameWidget::initializeTextures() {
     textures = new GLuint[4];  // Don't initialize to 0
     glGenTextures(4, textures);
     
-    QString base_path = "./../../../assets/textures/";
+    QString base_path = "./../../../biblio/assets/textures/";
 
     // Load images
     QImage appleImage(base_path + "apple.jpg");
@@ -190,7 +183,7 @@ void GameWidget::startCountdown(int seconds) {
             delete countdownTimer;
             delete label; // Delete the label after countdown
 
-            m_fruit = new Fruit(Fruit::ORANGE, textures, QTime::currentTime()); // Initialize the fruit
+            m_fruit.push_back(new Fruit(textures, QTime::currentTime()));
         }
     });
     countdownTimer->start(1000); // Update every second
@@ -265,9 +258,19 @@ void GameWidget::paintGL()
     
 
     // Draw the fruit after re-enabling lighting
-    if (m_fruit) {
-        glPushMatrix();
-        m_fruit->draw(QTime::currentTime());
-        glPopMatrix();
+    for(auto fruit : m_fruit) {
+
+        // if the fruit y coordinate is less than 0, remove it
+        if (fruit->getPosition(QTime::currentTime()).y() < 0) {
+            delete fruit;
+            m_fruit.erase(std::remove(m_fruit.begin(), m_fruit.end(), fruit), m_fruit.end());
+            
+            m_fruit.push_back(new Fruit(textures, QTime::currentTime()));
+            continue;
+        }
+        else {
+            fruit->draw(QTime::currentTime());
+        }
+
     }
 }

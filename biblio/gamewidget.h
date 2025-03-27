@@ -5,6 +5,7 @@
 #include <QOpenGLWidget>
 #include "fruit.h"
 #include <qlabel.h>
+#include <vector>
 
 namespace Ui {
 class GameWidget;
@@ -18,8 +19,6 @@ public:
     explicit GameWidget(QWidget *parent = nullptr);
     ~GameWidget();
     
-    Fruit* getFruit() const;
-    void setFruit(Fruit::FruitType type);
     void updateFruitDisplay();
 
 public slots:
@@ -32,7 +31,7 @@ public slots:
 
 private:
     Ui::GameWidget *ui;
-    Fruit* m_fruit;
+    std::vector<Fruit*> m_fruit;
     GLuint* textures;
     QFont m_font;   
     QLabel* label;

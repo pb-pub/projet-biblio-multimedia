@@ -19,11 +19,13 @@ public:
 
     Fruit(FruitType type, GLuint* textures, QTime currentTime, QVector3D initSpeed, QVector3D initPosition);
     Fruit(FruitType type, GLuint* textures, QTime currentTime);
+    Fruit(GLuint* textures, QTime currentTime);
     ~Fruit();
 
     void setType(FruitType type);
     void draw(QTime currentTime);
-
+    QVector3D getPosition(QTime currentTime);
+    
 private :
     FruitType currentFruit;
 
@@ -34,9 +36,10 @@ private :
     void drawBomb(QTime currentTime);
 
     void setTexture(GLuint textureID);
-    void setMaterial(const GLfloat* ambient, const GLfloat* diffuse, const GLfloat* specular, const GLfloat* shininess);
-
-    QVector3D getPosition(QTime currentTime);
+    void setMaterial(const GLfloat* ambient, const GLfloat* diffuse, const GLfloat* specular, const  GLfloat* shininess);
+    
+    FruitType getRandomFruitType();
+    QVector3D getRandomInitSpeed();
     
     QVector3D initalSpeed;
     QVector3D initialPosition;

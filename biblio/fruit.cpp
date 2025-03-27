@@ -20,10 +20,53 @@ Fruit::Fruit(FruitType type, GLuint *textureids, QTime currentTime) : currentFru
     gluQuadricTexture(quadric, GL_TRUE);
 }
 
+Fruit::Fruit(GLuint* textureids, QTime currentTime) : textures(textureids), startTime(currentTime), initialPosition(QVector3D(0, 1, 30))
+{
+    std::cout<<"Creating fruit" << std::endl;
+    initalSpeed = getRandomInitSpeed();
+    currentFruit = getRandomFruitType();
+
+    quadric = gluNewQuadric();
+    gluQuadricDrawStyle(quadric, GLU_FILL);
+    gluQuadricNormals(quadric, GLU_SMOOTH);
+    gluQuadricTexture(quadric, GL_TRUE);
+}
+
 Fruit::~Fruit()
 {
     gluDeleteQuadric(quadric);
 }
+
+Fruit::FruitType Fruit::getRandomFruitType()
+{
+    int randomValue = rand() % 5; // Random number between 0 and 4
+    switch (randomValue)
+    {
+    case 0:
+        return APPLE;
+    case 1:
+        return ORANGE;
+    case 2:
+        return BANANA;
+    case 3:
+        return PEAR;
+    case 4:
+        return BOMB;
+    default:
+        return APPLE; // Default case
+    }
+}
+
+QVector3D Fruit::getRandomInitSpeed()
+{
+    // Generate a random speed vector
+    float x = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 4.0f - 2.0f; // Random value between -2 and 2
+    float y = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 4.0f + 3.0f; // Random value between 3 and 7
+    float z = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 10.0f - 35.0f; // Random value between -35 and -25
+    return QVector3D(x, y, z);
+}
+
+
 
 void Fruit::setType(FruitType type)
 {
@@ -95,18 +138,23 @@ void Fruit::setMaterial(const GLfloat *ambient, const GLfloat *diffuse, const GL
 
 void Fruit::drawApple(QTime currentTime)
 {
-
     // Positionnement de la pomme
     glPushMatrix();
     QVector3D position = getPosition(currentTime);
     glTranslatef(position.x(), position.y(), position.z());
-    glRotatef(90.0f, 1.0f, 0.0f, 0.0f); // Rotation pour aligner la texture sur les pôles
+    
+    // Add rotation based on time
+    float rotationAngle = startTime.msecsTo(currentTime) / 20.0f; // Adjust divisor for rotation speed
+    glRotatef(rotationAngle, 0.0f, 1.0f, 0.3f); // Rotate around a slightly tilted axis
+    
+    glRotatef(90.0f, 1.0f, 0.0f, 0.0f); // Rotation for texture alignment
 
     // Desin du corps de la pomme (avec la texture)
     setTexture(textures[0]);
-    gluSphere(quadric, 1.0, 32, 32);
+    gluSphere(quadric, 0.3, 32, 32);
 
     glDisable(GL_TEXTURE_2D);
+    glPopMatrix(); // Added missing glPopMatrix()
 }
 
 void Fruit::drawOrange(QTime currentTime)
@@ -115,6 +163,11 @@ void Fruit::drawOrange(QTime currentTime)
     glPushMatrix();
     QVector3D position = getPosition(currentTime);
     glTranslatef(position.x(), position.y(), position.z());
+    
+    // Add rotation based on time
+    float rotationAngle = startTime.msecsTo(currentTime) / 18.0f;
+    glRotatef(rotationAngle, 0.2f, 1.0f, 0.0f);
+    
     glRotatef(90.0f, 1.0f, 0.0f, 0.0f); // Rotation pour aligner la texture sur les pôles
 
     // Dessin de l'orange (avec la texture)
@@ -122,6 +175,7 @@ void Fruit::drawOrange(QTime currentTime)
     gluSphere(quadric, 0.3, 32, 32);
 
     glDisable(GL_TEXTURE_2D);
+    glPopMatrix(); // Added missing glPopMatrix()
 }
 
 void Fruit::drawBanana(QTime currentTime)
@@ -130,13 +184,25 @@ void Fruit::drawBanana(QTime currentTime)
     glPushMatrix();
     QVector3D position = getPosition(currentTime);
     glTranslatef(position.x(), position.y(), position.z());
-    glRotatef(90.0f, 1.0f, 0.0f, 0.0f); // Rotation pour aligner la texture sur les pôles
 
-    // Dessin de la banane (avec la texture)
+    // Add rotation based on time
+    float rotationAngle = startTime.msecsTo(currentTime) / 15.0f;
+    glRotatef(rotationAngle, 0.5f, 1.0f, 0.5f);
+
+    // Dessin de la banane (forme courbée)
     setTexture(textures[2]);
-    gluSphere(quadric, 1.0, 32, 32);
+
+    // Dessiner plusieurs segments pour simuler une forme courbée
+    for (int i = 0; i < 5; ++i) {
+        glPushMatrix();
+        glTranslatef(0.0f, 0.0f, -0.1f * i); // Décaler chaque segment
+        glRotatef(10.0f * i, 0.0f, 1.0f, 0.0f); // Courber légèrement chaque segment
+        gluCylinder(quadric, 0.1, 0.1, 0.1, 32, 32); // Segment cylindrique
+        glPopMatrix();
+    }
 
     glDisable(GL_TEXTURE_2D);
+    glPopMatrix();
 }
 
 void Fruit::drawPear(QTime currentTime)
@@ -145,11 +211,17 @@ void Fruit::drawPear(QTime currentTime)
     glPushMatrix();
     QVector3D position = getPosition(currentTime);
     glTranslatef(position.x(), position.y(), position.z());
+    
+    // Add rotation based on time
+    float rotationAngle = startTime.msecsTo(currentTime) / 22.0f;
+    glRotatef(rotationAngle, 0.3f, 1.0f, 0.2f);
+    
     glRotatef(90.0f, 1.0f, 0.0f, 0.0f); // Rotation pour aligner la texture sur les pôles
     // Dessin de la poire (avec la texture)
     setTexture(textures[3]);
-    gluSphere(quadric, 1.0, 32, 32);
+    gluSphere(quadric, 0.3, 32, 32);
     glDisable(GL_TEXTURE_2D);
+    glPopMatrix(); // Added missing glPopMatrix()
 }
 
 void Fruit::drawBomb(QTime currentTime)
@@ -158,10 +230,16 @@ void Fruit::drawBomb(QTime currentTime)
     glPushMatrix();
     QVector3D position = getPosition(currentTime);
     glTranslatef(position.x(), position.y(), position.z());
+    
+    // Add rotation based on time
+    float rotationAngle = startTime.msecsTo(currentTime) / 10.0f; // Bombs rotate faster
+    glRotatef(rotationAngle, 0.0f, 1.0f, 0.0f);
+    
     glRotatef(90.0f, 1.0f, 0.0f, 0.0f); // Rotation pour aligner la texture sur les pôles
 
     // Dessin de la bombe
-    gluSphere(quadric, 1.0, 32, 32);
+    gluSphere(quadric, 0.3, 32, 32);
+    glPopMatrix(); // Added missing glPopMatrix()
 }
 
 QVector3D Fruit::getPosition(QTime currentTime)
