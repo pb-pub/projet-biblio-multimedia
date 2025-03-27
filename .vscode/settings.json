@@ -1,5 +1,8 @@
 {
     "cmake.sourceDirectory": "/home/paulb/Documents/Cours/projet-BM/projet-biblio-multimedia/biblio",
     "cmake.options.statusBarVisibility": "visible",
-    "cmake.buildDirectory": "${workspaceFolder}/builds/${buildKit}/${buildType}"
+    "cmake.buildDirectory": "${workspaceFolder}/builds/${buildKit}/${buildType}",
+    "files.associations": {
+        "ostream": "cpp"
+    }
 }

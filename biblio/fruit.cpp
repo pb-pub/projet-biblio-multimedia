@@ -232,14 +232,24 @@ void Fruit::drawBomb(QTime currentTime)
     glTranslatef(position.x(), position.y(), position.z());
     
     // Add rotation based on time
-    float rotationAngle = startTime.msecsTo(currentTime) / 10.0f; // Bombs rotate faster
-    glRotatef(rotationAngle, 0.0f, 1.0f, 0.0f);
+    float rotationAngle = startTime.msecsTo(currentTime) / 10.0f; 
+    glRotatef(rotationAngle, 0.0f, -1.0f, 0.0f);
     
+    // Dessin du corps principal de la bombe (sphère)
+    setTexture(textures[4]);
+    gluSphere(quadric, 0.3, 32, 32);
     glRotatef(90.0f, 1.0f, 0.0f, 0.0f); // Rotation pour aligner la texture sur les pôles
 
-    // Dessin de la bombe
-    gluSphere(quadric, 0.3, 32, 32);
-    glPopMatrix(); // Added missing glPopMatrix()
+    // Dessin de la mèche (cylindre)
+    glPushMatrix();
+    glTranslatef(0.0f, 0.35f, 0.0f); // Positionner la mèche au-dessus de la sphère
+    glRotatef(-90.0f, 1.0f, 0.0f, 0.0f); // Aligner le cylindre verticalement
+    gluCylinder(quadric, 0.05, 0.05, 0.2, 16, 16); // Cylindre pour la mèche
+    glPopMatrix();
+
+    // Désactiver la texture
+    glDisable(GL_TEXTURE_2D);
+    glPopMatrix();
 }
 
 QVector3D Fruit::getPosition(QTime currentTime)

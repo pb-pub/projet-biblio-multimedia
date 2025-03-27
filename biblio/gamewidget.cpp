@@ -131,14 +131,16 @@ void GameWidget::initializeTextures() {
     QImage orangeImage(base_path + "orange.jpg");
     QImage bananaImage(base_path + "banana.jpg");
     QImage pearImage(base_path + "pear.jpg");
+    QImage bombImage(base_path + "bomb.jpg");
 
     appleImage = appleImage.convertToFormat(QImage::Format_RGBA8888);
     orangeImage = orangeImage.convertToFormat(QImage::Format_RGBA8888);
     bananaImage = bananaImage.convertToFormat(QImage::Format_RGBA8888);
     pearImage = pearImage.convertToFormat(QImage::Format_RGBA8888);
+    bombImage = bombImage.convertToFormat(QImage::Format_RGBA8888);
 
     // check if images are loaded correctly
-    if (appleImage.isNull() || orangeImage.isNull() || bananaImage.isNull() || pearImage.isNull()) {
+    if (appleImage.isNull() || orangeImage.isNull() || bananaImage.isNull() || pearImage.isNull() || bombImage.isNull()) {
         std::cerr << "Error loading texture images" << std::endl;
         return;
     }
@@ -166,9 +168,16 @@ void GameWidget::initializeTextures() {
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, pearImage.width(), pearImage.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, pearImage.bits());
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    
+    // Bomb Texture
+    glBindTexture(GL_TEXTURE_2D, textures[4]);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, bombImage.width(), bombImage.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, bombImage.bits());
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
 
     glFlush();  // Ensure texture uploads are finished
-    std::cout << "Texture IDs: " << textures[0] << " " << textures[1] << " " << textures[2] << " " << textures[3] << std::endl;
+    std::cout << "Texture IDs: " << textures[0] << " " << textures[1] << " " << textures[2] << " " << textures[3] << " " << textures[4] << std::endl;
 }
 
 void GameWidget::startCountdown(int seconds) {
