@@ -28,6 +28,7 @@ qt_add_executable(biblio
     gamewidget.h gamewidget.cpp gamewidget.ui
     
     fruit.h fruit.cpp
+    settingswindow.h settingswindow.cpp settingswindow.ui
 )
 
 target_link_libraries(biblio

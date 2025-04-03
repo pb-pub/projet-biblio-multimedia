@@ -261,3 +261,5 @@ rules.ninja
 # If you want to be explicit:
 /build/
 /builds/
+/biblio/build*/
+

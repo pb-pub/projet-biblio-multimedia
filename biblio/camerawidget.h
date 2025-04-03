@@ -6,6 +6,7 @@
 #include <QImage>
 #include <QPixmap>
 #include <opencv2/opencv.hpp>
+#include <opencv2/objdetect.hpp>
 
 namespace Ui {
 class CameraWidget;
@@ -23,10 +24,10 @@ private slots:
     void updateFrame();
 
 private:
-
     Ui::CameraWidget *ui;
-    QTimer *timer;
     cv::VideoCapture cap;
+    QTimer *timer;
+    cv::CascadeClassifier faceCascade; // Added for face detection
 };
 
 #endif // CAMERAWIDGET_H
