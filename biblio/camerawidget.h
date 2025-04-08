@@ -22,6 +22,7 @@ public:
 
 private slots:
     void updateFrame();
+    void on_thresholdingButton_clicked();
 
 private:
     Ui::CameraWidget *ui;
@@ -31,6 +32,8 @@ private:
     
     int openCamera(); // Returns status code: 1=success, 0=no camera, -1=permission denied
     void showPlaceholderMessage(const QString &title, const QString &message);
+    bool thresholdingEnabled = false; // Flag to enable/disable thresholding
+    
 };
 
 #endif // CAMERAWIDGET_H

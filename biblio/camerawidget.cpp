@@ -45,15 +45,17 @@ CameraWidget::CameraWidget(QWidget *parent)
                             "Failed to open camera. No camera device was found or it's already in use.");
         }
         
-        // Display placeholder message in widget
         showPlaceholderMessage("Camera access required", 
                               "Please grant camera permission in System Settings → Privacy & Security → Camera");
     }
 
-    // Set cascadePath using an absolute path from the application directory.
+    
     QString cascadePath = "/Users/ismail/projet-biblio-multimedia/biblio/assets/haarcascade_frontalface_alt.xml";
     if (!faceCascade.load(cascadePath.toStdString())) {
-        qDebug() << "Error: Could not load Haar Cascade from" << cascadePath;
+        cascadePath = "./../../../biblio/assets/haarcascade_frontalface_alt.xml";
+        if (!faceCascade.load(cascadePath.toStdString())) {
+            qDebug() << "Error: Could not load Haar Cascade from" << cascadePath;
+        }
     }
 
     timer = new QTimer(this);
@@ -85,12 +87,9 @@ int CameraWidget::openCamera() {
     if (cap.isOpened()) return 1;
     
     // Third try - try different camera index
-    cap.open(1);
+    cap.open("http://161.3.36.211:8000/camera/mjpeg", cv::CAP_FFMPEG);
     if (cap.isOpened()) return 1;
     
-    // Fourth try - try a test video file if available
-    cap.open("test_video.mp4");
-    if (cap.isOpened()) return 1;
     
     qDebug() << "Error: Could not open camera or video source";
     return 0; // Return 0 for other errors
@@ -166,8 +165,10 @@ void CameraWidget::updateFrame()
     // Convert to grayscale for face detection
     cv::Mat frameGray = frame.clone();
     cv::cvtColor(frameGray, frameGray, cv::COLOR_RGB2GRAY);
-    cv::threshold(frameGray, frameGray, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
 
+    if (thresholdingEnabled) 
+        cv::threshold(frameGray, frameGray, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
+    
     // Detect faces only if cascade was loaded
     if (!faceCascade.empty()) {
         std::vector<cv::Rect> faces;
@@ -176,7 +177,14 @@ void CameraWidget::updateFrame()
         // Draw rectangles around detected faces
         for (const auto &face : faces) {
             cv::rectangle(frame, face, cv::Scalar(0, 255, 0), 2);
+            
+            // Print the center of the face rectangle
+            std::cout << "Face center: (" << face.x + face.width / 2 << ", " << face.y + face.height / 2 << ")" << std::endl;
+
+            // Draw a circle at the center of the face
+            cv::circle(frame, cv::Point(face.x + face.width / 2, face.y + face.height / 2), 5, cv::Scalar(255, 0, 0), -1);
         }
+
     }
 
     // Convert the grayscale to color for display
@@ -202,3 +210,15 @@ void CameraWidget::updateFrame()
     // Set the scaled pixmap to the label
     ui->label->setPixmap(scaledPixmap);
 }
+
+
+
+void CameraWidget::on_thresholdingButton_clicked()
+{
+    thresholdingEnabled = !thresholdingEnabled;
+    if (thresholdingEnabled)
+        ui->thresholdingButton->setText("Disable Thresholding");
+    else
+        ui->thresholdingButton->setText("Enable Thresholding");
+}
+
