@@ -8,14 +8,19 @@ find_package(OpenCV REQUIRED)
 
 include_directories(${OpenCV_INCLUDE_DIRS})
 
-cmake_minimum_required(VERSION 3.16)
-project(Biblio LANGUAGES CXX)
-
 set(CMAKE_PREFIX_PATH "$ENV{CMAKE_PREFIX_PATH}")
 
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets)
 qt_standard_project_setup()
 
+# Set macOS bundle information
+set(MACOSX_BUNDLE_GUI_IDENTIFIER "com.biblio")
+set(MACOSX_BUNDLE_BUNDLE_NAME "Biblio")
+set(MACOSX_BUNDLE_BUNDLE_VERSION "1.0.0")
+set(MACOSX_BUNDLE_SHORT_VERSION_STRING "1.0")
+set(MACOSX_BUNDLE_LONG_VERSION_STRING "1.0.0")
+set(MACOSX_BUNDLE_COPYRIGHT "© 2025 Biblio")
+set(MACOSX_BUNDLE_INFO_STRING "Biblio Multimedia Application")
 
 qt_add_executable(biblio
     WIN32 MACOSX_BUNDLE
@@ -29,16 +34,67 @@ qt_add_executable(biblio
     
     fruit.h fruit.cpp
     settingswindow.h settingswindow.cpp settingswindow.ui
+    haarcascade_frontalface_alt.xml
+    assets/haarcascade_frontalface_alt.xml
 )
 
-target_link_libraries(biblio
-    PRIVATE
-        Qt::Core
-        Qt::Widgets
-        Qt::OpenGLWidgets
-        ${OpenCV_LIBS}  # Link OpenCV libraries
-        GLU
-)
+# Copy assets to build directory
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/assets DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+
+# Fix for macOS bundle resources
+if(APPLE)
+    # Use MACOSX_BUNDLE_INFO_PLIST property correctly
+    set_target_properties(biblio PROPERTIES
+        MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/Info.plist.in
+    )
+    
+    # Add resources to the bundle using target_sources
+    file(GLOB TEXTURE_FILES 
+         "${CMAKE_CURRENT_SOURCE_DIR}/assets/textures/*.jpg"
+         "${CMAKE_CURRENT_SOURCE_DIR}/assets/textures/*.png"
+    )
+    file(GLOB FONT_FILES 
+         "${CMAKE_CURRENT_SOURCE_DIR}/assets/*.otf"
+         "${CMAKE_CURRENT_SOURCE_DIR}/assets/*.ttf"
+    )
+    
+    target_sources(biblio PRIVATE
+        ${TEXTURE_FILES}
+        ${FONT_FILES}
+    )
+    
+    # Set properties for resource files
+    set_source_files_properties(
+        ${TEXTURE_FILES}
+        ${FONT_FILES}
+        PROPERTIES
+        MACOSX_PACKAGE_LOCATION Resources
+    )
+endif()
+
+# Platform-specific OpenGL handling
+if(APPLE)
+    # On macOS, link to the required frameworks instead of using GLU directly
+    target_link_libraries(biblio
+        PRIVATE
+            Qt::Core
+            Qt::Widgets
+            Qt::OpenGLWidgets
+            ${OpenCV_LIBS}  # Link OpenCV libraries
+            "-framework OpenGL"
+            "-framework AGL"
+    )
+else()
+    # On other platforms, link to GLU as before
+    target_link_libraries(biblio
+        PRIVATE
+            Qt::Core
+            Qt::Widgets
+            Qt::OpenGLWidgets
+            ${OpenCV_LIBS}  # Link OpenCV libraries
+            GLU
+    )
+endif()
 
 include(GNUInstallDirs)
 

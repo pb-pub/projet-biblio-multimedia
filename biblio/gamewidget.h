@@ -6,6 +6,10 @@
 #include "fruit.h"
 #include <qlabel.h>
 #include <vector>
+#include <QColor>
+#include <QCoreApplication>
+#include <QDir>
+#include <QDebug>
 
 namespace Ui {
 class GameWidget;
@@ -36,6 +40,9 @@ private:
     QFont m_font;   
     QLabel* label;
     GLUquadric* cylinder;
+    
+    // Helper method to create fallback colored textures
+    QImage createColorTexture(const QColor& color);
 };
 
 #endif // GAMEWIDGET_H

@@ -1,11 +1,15 @@
 #ifndef FRUIT_H
 #define FRUIT_H
 
-#include <GL/glu.h>
 #include <qopengl.h>
 #include <QColor>
 #include <QVector3D>
 #include <QTime>
+#ifdef __APPLE__
+#include <OpenGL/glu.h>
+#else
+#include <GL/glu.h>
+#endif
 
 class Fruit {
 public:

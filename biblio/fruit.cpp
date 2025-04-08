@@ -261,7 +261,7 @@ QVector3D Fruit::getPosition(QTime currentTime)
     float y = initalSpeed.y() * deltaT + initialPosition.y() - (0.5f * 9.81f * deltaT * deltaT);
     float z = initalSpeed.z() * deltaT + initialPosition.z();
 
-    std::cout << "Position: " << x << ", " << y << ", " << z << std::endl;
+    //std::cout << "Position: " << x << ", " << y << ", " << z << std::endl;
 
     return QVector3D(x, y, z);
 }

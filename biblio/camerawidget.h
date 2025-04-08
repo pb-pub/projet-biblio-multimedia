@@ -28,6 +28,9 @@ private:
     cv::VideoCapture cap;
     QTimer *timer;
     cv::CascadeClassifier faceCascade; // Added for face detection
+    
+    int openCamera(); // Returns status code: 1=success, 0=no camera, -1=permission denied
+    void showPlaceholderMessage(const QString &title, const QString &message);
 };
 
 #endif // CAMERAWIDGET_H

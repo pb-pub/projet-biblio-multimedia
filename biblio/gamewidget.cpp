@@ -1,10 +1,17 @@
+#ifdef __APPLE__
+#include <OpenGL/glu.h>
+#else
+#include <GL/glu.h>
+#endif
+
 #include "gamewidget.h"
 #include "ui_gamewidget.h"
 #include <QFontDatabase>
 #include <QTimer>
-#include <GL/glu.h>
 #include <iostream>
 #include <QTime>
+#include <QDir>
+#include <QCoreApplication>
 
 // Constants
 const float MAX_DIMENSION = 10.0f;
@@ -119,12 +126,48 @@ void GameWidget::initializeGL()
 }
 
 void GameWidget::initializeTextures() {
-
-    // Initialisation des textures
-    textures = new GLuint[4];  // Don't initialize to 0
-    glGenTextures(4, textures);
+    // Initialisation des textures - Fix array size to match number of textures (5 instead of 4)
+    textures = new GLuint[5];  // Changed from 4 to 5 to accommodate all textures including bomb
+    glGenTextures(5, textures);
     
-    QString base_path = "./../../../biblio/assets/textures/";
+    // Get the application directory and build absolute paths
+    QDir appDir(QCoreApplication::applicationDirPath());
+    qDebug() << "Application directory: " << appDir.absolutePath();
+    
+    // Try multiple possible texture locations
+    QStringList possibleBasePaths = {
+        // Relative to executable
+        appDir.absolutePath() + "/../../../biblio/assets/textures/",
+        // Relative to current directory
+        "./assets/textures/",
+        // Try going up directories
+        "../assets/textures/",
+        "../../assets/textures/",
+        "../../../assets/textures/",
+        // Absolute path for debugging
+        "/Users/ismail/projet-biblio-multimedia/biblio/assets/textures/"
+    };
+    
+    QString base_path;
+    bool foundPath = false;
+    
+    // Find the first valid path that contains at least one texture
+    for (const auto &path : possibleBasePaths) {
+        QDir dir(path);
+        if (dir.exists("apple.jpg") || dir.exists("orange.jpg")) {
+            base_path = path;
+            foundPath = true;
+            qDebug() << "Found texture path: " << base_path;
+            break;
+        }
+    }
+    
+    if (!foundPath) {
+        qCritical() << "Cannot find texture directory. Tried paths:";
+        for (const auto &path : possibleBasePaths) {
+            qCritical() << " - " << path;
+        }
+    }
 
     // Load images
     QImage appleImage(base_path + "apple.jpg");
@@ -132,6 +175,16 @@ void GameWidget::initializeTextures() {
     QImage bananaImage(base_path + "banana.jpg");
     QImage pearImage(base_path + "pear.jpg");
     QImage bombImage(base_path + "bomb.jpg");
+    
+    // Try loading backup textures if original textures failed
+    if (appleImage.isNull()) {
+        qWarning() << "Failed to load apple.jpg, trying backup red.jpg";
+        appleImage = QImage(base_path + "red.jpg");
+    }
+    if (orangeImage.isNull()) {
+        qWarning() << "Failed to load orange.jpg, trying backup orange_alt.jpg";
+        orangeImage = QImage(base_path + "orange_alt.jpg");
+    }
 
     appleImage = appleImage.convertToFormat(QImage::Format_RGBA8888);
     orangeImage = orangeImage.convertToFormat(QImage::Format_RGBA8888);
@@ -140,44 +193,57 @@ void GameWidget::initializeTextures() {
     bombImage = bombImage.convertToFormat(QImage::Format_RGBA8888);
 
     // check if images are loaded correctly
-    if (appleImage.isNull() || orangeImage.isNull() || bananaImage.isNull() || pearImage.isNull() || bombImage.isNull()) {
-        std::cerr << "Error loading texture images" << std::endl;
-        return;
+    if (appleImage.isNull() || orangeImage.isNull() || bananaImage.isNull() || 
+        pearImage.isNull() || bombImage.isNull()) {
+        qCritical() << "Error loading texture images";
+        
+        // Create fallback colored textures
+        appleImage = createColorTexture(QColor(255, 0, 0));     // Red for apple
+        orangeImage = createColorTexture(QColor(255, 165, 0));  // Orange
+        bananaImage = createColorTexture(QColor(255, 255, 0));  // Yellow for banana
+        pearImage = createColorTexture(QColor(0, 255, 0));      // Green for pear
+        bombImage = createColorTexture(QColor(50, 50, 50));     // Dark gray for bomb
     }
 
     // Apple Texture
     glBindTexture(GL_TEXTURE_2D, textures[0]);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, appleImage.width(), appleImage.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, appleImage.bits());
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     
     // Orange Texture
     glBindTexture(GL_TEXTURE_2D, textures[1]);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, orangeImage.width(), orangeImage.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, orangeImage.bits());
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
     // Banana Texture
     glBindTexture(GL_TEXTURE_2D, textures[2]);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, bananaImage.width(), bananaImage.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, bananaImage.bits());
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
     // Pear Texture
     glBindTexture(GL_TEXTURE_2D, textures[3]);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, pearImage.width(), pearImage.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, pearImage.bits());
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     
     // Bomb Texture
-    glBindTexture(GL_TEXTURE_2D, textures[4]);
+    glBindTexture(GL_TEXTURE_2D, textures[4]);  // Use index 4 for bomb (was using 4 even though array was sized 4)
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, bombImage.width(), bombImage.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, bombImage.bits());
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
     glFlush();  // Ensure texture uploads are finished
-    std::cout << "Texture IDs: " << textures[0] << " " << textures[1] << " " << textures[2] << " " << textures[3] << " " << textures[4] << std::endl;
+    qDebug() << "Texture IDs: " << textures[0] << " " << textures[1] << " " << textures[2] << " " << textures[3] << " " << textures[4];
+}
+
+// Add helper method to create fallback textures
+QImage GameWidget::createColorTexture(const QColor& color) {
+    QImage img(256, 256, QImage::Format_RGBA8888);
+    img.fill(color);
+    return img;
 }
 
 void GameWidget::startCountdown(int seconds) {
