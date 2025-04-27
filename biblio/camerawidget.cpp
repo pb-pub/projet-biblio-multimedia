@@ -1,7 +1,6 @@
 #include "camerawidget.h"
 #include "ui_camerawidget.h"
 #include <QDebug>
-#include <opencv2/objdetect.hpp>
 #include <QMessageBox>
 #include <QDesktopServices>
 #include <QUrl>
@@ -19,7 +18,7 @@ CameraWidget::CameraWidget(QWidget *parent)
     ui->label->setAlignment(Qt::AlignCenter);
 
     // Try different methods to open the camera
-    int openStatus = openCamera();
+    int openStatus = cameraHandler.openCamera();
     if (openStatus <= 0) {
         // Show different messages based on the error
         if (openStatus == -1) {
@@ -49,15 +48,6 @@ CameraWidget::CameraWidget(QWidget *parent)
                               "Please grant camera permission in System Settings → Privacy & Security → Camera");
     }
 
-    
-    QString cascadePath = "/Users/ismail/projet-biblio-multimedia/biblio/assets/haarcascade_frontalface_alt.xml";
-    if (!faceCascade.load(cascadePath.toStdString())) {
-        cascadePath = "./../../../biblio/assets/haarcascade_frontalface_alt.xml";
-        if (!faceCascade.load(cascadePath.toStdString())) {
-            qDebug() << "Error: Could not load Haar Cascade from" << cascadePath;
-        }
-    }
-
     timer = new QTimer(this);
     connect(timer, &QTimer::timeout, this, &CameraWidget::updateFrame);
     timer->start(33);
@@ -65,37 +55,8 @@ CameraWidget::CameraWidget(QWidget *parent)
     std::cout << "CameraWidget initialized" << std::endl;
 }
 
-int CameraWidget::openCamera() {
-    // First try - explicitly use AVFOUNDATION backend for macOS
-    cap.open(0, cv::CAP_AVFOUNDATION);
-    if (cap.isOpened()) return 1;
-    
-    // Check if camera access was denied (specific to macOS)
-    #ifdef __APPLE__
-    // Log information about the camera access attempt
-    qDebug() << "Attempting to access camera with AVFoundation backend";
-    cv::VideoCapture testCap(0, cv::CAP_AVFOUNDATION);
-    if (!testCap.isOpened()) {
-        // On macOS, status 0 typically means permission denied
-        qDebug() << "Camera access appears to be denied (permission issue)";
-        return -1; // Return -1 for permission issues
-    }
-    #endif
-    
-    // Second try - default camera with default backend
-    cap.open(0);
-    if (cap.isOpened()) return 1;
-    
-    // Third try - try different camera index
-    cap.open("http://192.168.1.80:8000/camera/mjpeg", cv::CAP_FFMPEG);
-    if (cap.isOpened()) return 1;
-    
-    
-    qDebug() << "Error: Could not open camera or video source";
-    return 0; // Return 0 for other errors
-}
-
-void CameraWidget::showPlaceholderMessage(const QString &title, const QString &message) {
+void CameraWidget::showPlaceholderMessage(const QString &title, const QString &message)
+{
     // Create a placeholder image with the message
     cv::Mat placeholder(480, 640, CV_8UC3, cv::Scalar(40, 40, 40));
     
@@ -137,12 +98,12 @@ void CameraWidget::updateFrame()
     cv::Mat frame;
     
     // Check if camera is open
-    if (!cap.isOpened()) {
+    if (!cameraHandler.isOpened()) {
         // Try to reopen the camera periodically
         static int reopenCounter = 0;
         if (++reopenCounter >= 90) { // Try every ~3 seconds (90 * 33ms)
             reopenCounter = 0;
-            int status = openCamera();
+            int status = cameraHandler.openCamera();
             if (status > 0) {
                 qDebug() << "Camera reconnected successfully";
             }
@@ -153,8 +114,7 @@ void CameraWidget::updateFrame()
     }
     
     // Try to read a frame
-    cap >> frame;
-    if (frame.empty()) {
+    if (!cameraHandler.getFrame(frame)) {
         showPlaceholderMessage("No Frame Received", "Camera is connected but no video stream is available");
         return;
     }
@@ -166,34 +126,16 @@ void CameraWidget::updateFrame()
     cv::Mat frameGray = frame.clone();
     cv::cvtColor(frameGray, frameGray, cv::COLOR_RGB2GRAY);
 
-    if (thresholdingEnabled) 
-        cv::threshold(frameGray, frameGray, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
-    
-    // Detect faces only if cascade was loaded
-    if (!faceCascade.empty()) {
-        std::vector<cv::Rect> faces;
-        faceCascade.detectMultiScale(frameGray, faces, 1.1, 4, 0 | cv::CASCADE_FIND_BIGGEST_OBJECT | cv::CASCADE_SCALE_IMAGE, cv::Size(30, 30), cv::Size(300, 300));
-        
-        // Draw rectangles around detected faces
-        for (const auto &face : faces) {
-            cv::rectangle(frame, face, cv::Scalar(0, 255, 0), 2);
-            
-            // Print the center of the face rectangle
-            std::cout << "Face center: (" << face.x + face.width / 2 << ", " << face.y + face.height / 2 << ")" << std::endl;
-
-            // Draw a circle at the center of the face
-            cv::circle(frame, cv::Point(face.x + face.width / 2, face.y + face.height / 2), 5, cv::Scalar(255, 0, 0), -1);
-        }
-
-    }
+    // Let the camera handler handle face detection
+    cameraHandler.detectFaces(frame, frameGray, thresholdingEnabled);
 
     // Convert the grayscale to color for display
     cv::Mat frame2;
-    cv::cvtColor(frameGray, frame2, cv::COLOR_GRAY2RGB);
+    cv::cvtColor(frameGray, frameGray, cv::COLOR_GRAY2RGB);
     
     // Create side-by-side display (concatenate horizontally)
     cv::Mat combinedFrame;
-    cv::hconcat(frame, frame2, combinedFrame);
+    cv::hconcat(frame, frameGray, combinedFrame);
 
     // Convert cv::Mat to QImage
     QImage qimg(combinedFrame.data, combinedFrame.cols, combinedFrame.rows, combinedFrame.step, QImage::Format_RGB888);
@@ -210,8 +152,6 @@ void CameraWidget::updateFrame()
     // Set the scaled pixmap to the label
     ui->label->setPixmap(scaledPixmap);
 }
-
-
 
 void CameraWidget::on_thresholdingButton_clicked()
 {

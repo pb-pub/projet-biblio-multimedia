@@ -26,6 +26,7 @@ public:
     Fruit(GLuint* textures, QTime currentTime);
     ~Fruit();
 
+    bool isBomb();
     void setType(FruitType type);
     void draw(QTime currentTime);
     QVector3D getPosition(QTime currentTime);

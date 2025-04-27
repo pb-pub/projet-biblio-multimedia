@@ -31,6 +31,7 @@ qt_add_executable(biblio
     gamewindow.h gamewindow.cpp gamewindow.ui
     camerawidget.h camerawidget.cpp camerawidget.ui
     gamewidget.h gamewidget.cpp gamewidget.ui
+    camerahandler.h camerahandler.cpp
     
     fruit.h fruit.cpp
     settingswindow.h settingswindow.cpp settingswindow.ui

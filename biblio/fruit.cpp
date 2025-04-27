@@ -308,3 +308,8 @@ QVector3D Fruit::getPosition(QTime currentTime)
 
     return QVector3D(x, y, z);
 }
+
+bool Fruit::isBomb()
+{
+    return currentFruit == BOMB;
+}

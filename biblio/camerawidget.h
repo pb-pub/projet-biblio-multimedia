@@ -5,8 +5,7 @@
 #include <QTimer>
 #include <QImage>
 #include <QPixmap>
-#include <opencv2/opencv.hpp>
-#include <opencv2/objdetect.hpp>
+#include "camerahandler.h"
 
 namespace Ui {
 class CameraWidget;
@@ -26,14 +25,11 @@ private slots:
 
 private:
     Ui::CameraWidget *ui;
-    cv::VideoCapture cap;
+    CameraHandler cameraHandler;
     QTimer *timer;
-    cv::CascadeClassifier faceCascade; // Added for face detection
     
-    int openCamera(); // Returns status code: 1=success, 0=no camera, -1=permission denied
     void showPlaceholderMessage(const QString &title, const QString &message);
     bool thresholdingEnabled = false; // Flag to enable/disable thresholding
-    
 };
 
 #endif // CAMERAWIDGET_H

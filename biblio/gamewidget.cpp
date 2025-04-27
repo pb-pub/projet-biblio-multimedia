@@ -12,6 +12,8 @@
 #include <QTime>
 #include <QDir>
 #include <QCoreApplication>
+#include <QPainter>
+#include <QDebug>
 
 // Constants
 const float MAX_DIMENSION = 10.0f;
@@ -74,10 +76,19 @@ GameWidget::GameWidget(QWidget *parent)
     label->setAttribute(Qt::WA_TransparentForMouseEvents); // Make label transparent to mouse events
     
     startCountdown(3); // Start countdown from 3 seconds
+    
+    // Initialize camera
+    initializeCamera();
 }
 
 GameWidget::~GameWidget()
 {
+    // Stop camera timer before destruction
+    if (cameraTimer) {
+        cameraTimer->stop();
+        delete cameraTimer;
+    }
+    
     delete ui;
     delete label;
     delete[] textures;
@@ -389,4 +400,140 @@ void GameWidget::paintGL()
         }
 
     }
+    
+    // Draw a small ball at the projected point if it exists
+    if (hasProjectedPoint) {
+        glPushMatrix();
+        
+        // Set material for the ball (bright red)
+        GLfloat ball_ambient[] = {0.5f, 0.0f, 0.0f, 1.0f};
+        GLfloat ball_diffuse[] = {1.0f, 0.0f, 0.0f, 1.0f};
+        GLfloat ball_specular[] = {1.0f, 0.5f, 0.5f, 1.0f};
+        glMaterialfv(GL_FRONT, GL_AMBIENT, ball_ambient);
+        glMaterialfv(GL_FRONT, GL_DIFFUSE, ball_diffuse);
+        glMaterialfv(GL_FRONT, GL_SPECULAR, ball_specular);
+        glMaterialf(GL_FRONT, GL_SHININESS, 50.0f);
+        
+        // Move to the projected point
+        glTranslatef(projectedPoint.x(), projectedPoint.y(), projectedPoint.z());
+        
+        // Draw a sphere (small ball with radius 0.15)
+        GLUquadric* ball = gluNewQuadric();
+        gluQuadricDrawStyle(ball, GLU_FILL);
+        gluSphere(ball, 0.15f, 16, 16);
+        gluDeleteQuadric(ball);
+        
+        glPopMatrix();
+    }
 }
+
+void GameWidget::initializeCamera()
+{
+    // Try to open the camera
+    int openStatus = cameraHandler.openCamera();
+    
+    if (openStatus > 0) {
+        // Camera opened successfully
+        cameraInitialized = true;
+        
+        // Set up timer for camera frame updates
+        cameraTimer = new QTimer(this);
+        connect(cameraTimer, &QTimer::timeout, this, &GameWidget::updateFrame);
+        cameraTimer->start(33); // ~30 fps
+        
+        qDebug() << "Camera initialized successfully";
+    } else {
+        // Camera failed to open
+        qDebug() << "Failed to initialize camera, error code:" << openStatus;
+    }
+}
+
+void GameWidget::updateFrame()
+{
+    if (!cameraInitialized || !cameraHandler.isOpened()) {
+        return;
+    }
+    
+    // Get new frame from camera
+    if (cameraHandler.getFrame(currentFrame)) {
+        // Convert to grayscale for face detection
+        cv::cvtColor(currentFrame, grayFrame, cv::COLOR_BGR2GRAY);
+        
+        // Detect faces
+        std::vector<cv::Point> detectedPoints = cameraHandler.detectFaces(currentFrame, grayFrame, false);
+        
+        // Check if any detected point intersects with fruits
+        QTime currentTime = QTime::currentTime();
+        
+        for (const auto& point : detectedPoints) {
+            std::vector<Fruit*> fruitsToRemove;
+            
+            for (auto fruit : m_fruit) {
+                if (isFruitHit(point, fruit, currentTime)) {
+                    fruitsToRemove.push_back(fruit);
+
+                    if (fruit->isBomb()) {
+                        // Emit signal for game over
+                        emit lifeDecrease();
+                    } else {
+                        // Emit signal to increase score
+                        emit scoreIncreased();
+                    }
+                }
+            }
+            
+            // Remove hit fruits and add new ones
+            for (auto fruitToRemove : fruitsToRemove) {
+                m_fruit.erase(std::remove(m_fruit.begin(), m_fruit.end(), fruitToRemove), m_fruit.end());
+                delete fruitToRemove;
+                // Add a new fruit to replace the one we removed
+                m_fruit.push_back(new Fruit(textures, currentTime));
+            }
+        }
+        
+        update();
+    }
+}
+
+void GameWidget::convertCameraPointToGameSpace(const cv::Point& cameraPoint, float& gameX, float& gameZ)
+{
+    // Get camera dimensions
+    int camWidth = currentFrame.cols;
+    int camHeight = currentFrame.rows;
+    
+    // Map camera X coordinate to angle around cylinder (0 to 2π)
+    float angle = M_PI - ((float)cameraPoint.x / camWidth) * M_PI;
+    
+    // Map camera Y coordinate to height on cylinder (0 to 4)
+    float cylinderHeight = 4.0f * (1.0f - (float)cameraPoint.y / camHeight);
+    
+    // Set coordinates based on cylinder projection
+    gameX = cos(angle);  // X coordinate on cylinder
+    gameZ = sin(angle);  // Z coordinate on cylinder
+    
+    // Store the projected point for visualization
+    projectedPoint = QVector3D(gameX, cylinderHeight, gameZ);
+    hasProjectedPoint = true;
+    
+    qDebug() << "Projected point:" << projectedPoint.x() << projectedPoint.y() << projectedPoint.z();
+}
+
+bool GameWidget::isFruitHit(const cv::Point& point, Fruit* fruit, QTime currentTime)
+{
+    // Convert camera point to game space
+    float gameX, gameZ;
+    convertCameraPointToGameSpace(point, gameX, gameZ);
+    
+    // Get fruit position
+    QVector3D fruitPos = fruit->getPosition(currentTime);
+    
+    // Calculate distance in 3D space using the projected point
+    float dx = projectedPoint.x() - fruitPos.x();
+    float dy = projectedPoint.y() - fruitPos.y();
+    float dz = projectedPoint.z() - fruitPos.z();
+    float distance = sqrt(dx*dx + dy*dy + dz*dz);
+    
+    // Check if distance is less than combined radii (0.5 for fruit + 0.15 for ball = 0.65)
+    return distance < 0.65f && fruitPos.y() > 0.5f; // Only count hits when fruit is above ground
+}
+

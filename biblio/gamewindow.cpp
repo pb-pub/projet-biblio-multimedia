@@ -18,6 +18,28 @@ GameWindow::GameWindow(QWidget *parent)
     }
     gameWidget = new GameWidget(this);
     ui->game->layout()->addWidget(gameWidget);
+    
+    // Connect the scoreIncreased signal to a slot that updates the score
+    connect(gameWidget, &GameWidget::scoreIncreased, this, [this]() {
+        // Increment score and update display
+        score++;
+        updateLabelDisplay();
+    });
+    
+    // Connect the lifeDecrease signal to a slot that decreases lives
+    connect(gameWidget, &GameWidget::lifeDecrease, this, [this]() {
+        // Decrement lives and update display
+        if (lives > 0) {
+            lives--;
+        }
+        updateLabelDisplay();
+        
+        // Check if game over
+        if (lives <= 0) {
+            // Handle game over here if needed
+            // For example: QMessageBox::information(this, "Game Over", "No more lives remaining!");
+        }
+    });
 
     // Assurer que le label est visible au-dessus du GameWidget
     if (ui->label) {
@@ -65,6 +87,8 @@ void GameWindow::updateLabelDisplay()
         ui->label->setText(QString("<html><head/><body><p><span style=\" font-weight:700; font-style:italic; text-decoration: underline;\">Score : </span></p><p>%1</p><p><span style=\" color:#aa0000;\">"+ lives +"</span></p></body></html>").arg(score));
     }
 }
+
+
 
 
 

@@ -10,6 +10,8 @@
 #include <QCoreApplication>
 #include <QDir>
 #include <QDebug>
+#include <QTimer>
+#include "camerahandler.h"
 
 namespace Ui {
 class GameWidget;
@@ -25,6 +27,10 @@ public:
     
     void updateFruitDisplay();
 
+signals:
+    void scoreIncreased(); // Signal emitted when a fruit is hit
+    void lifeDecrease(); // Signal emitted when a bomb is hit
+
 public slots:
     // Change these from private to public slots to make them accessible via signal/slot
     void initializeGL();
@@ -32,6 +38,7 @@ public slots:
     void startCountdown(int seconds);
     void resizeGL(int width, int height);
     void paintGL();
+    void updateFrame(); // For camera updates
 
 private:
     Ui::GameWidget *ui;
@@ -40,9 +47,19 @@ private:
     QFont m_font;   
     QLabel* label;
     GLUquadric* cylinder;
+    CameraHandler cameraHandler;
+    QTimer *cameraTimer;
+    cv::Mat currentFrame;
+    cv::Mat grayFrame;
+    bool cameraInitialized = false;
+    QVector3D projectedPoint;
+    bool hasProjectedPoint = false;
     
     // Helper method to create fallback colored textures
     QImage createColorTexture(const QColor& color);
+    void initializeCamera();
+    bool isFruitHit(const cv::Point& point, Fruit* fruit, QTime currentTime);
+    void convertCameraPointToGameSpace(const cv::Point& cameraPoint, float& gameX, float& gameZ);
 };
 
 #endif // GAMEWIDGET_H
