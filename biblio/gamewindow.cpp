@@ -5,6 +5,7 @@
 
 #include <QVBoxLayout>
 #include <qlabel.h>
+#include <string>
 
 GameWindow::GameWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -44,7 +45,7 @@ GameWindow::GameWindow(QWidget *parent)
         // Repositionner le label sur le dessus si nécessaire
         QTimer::singleShot(100, [this]() {
             ui->label->raise();
-            std::cout << ui->label->text().toStdString() << std::endl;
+            updateLabelDisplay();
         });
     } 
 }
@@ -53,4 +54,17 @@ GameWindow::~GameWindow()
 {
     delete ui;
 }
+void GameWindow::updateLabelDisplay()
+{
+    QString lives = "";
+    for (int i = 0; i < this->lives; i++) {
+        lives += "✘ ";
+    }
+ 
+    if (ui->label) {
+        ui->label->setText(QString("<html><head/><body><p><span style=\" font-weight:700; font-style:italic; text-decoration: underline;\">Score : </span></p><p>%1</p><p><span style=\" color:#aa0000;\">"+ lives +"</span></p></body></html>").arg(score));
+    }
+}
+
+
 

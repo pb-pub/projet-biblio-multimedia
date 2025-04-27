@@ -24,6 +24,8 @@ private:
     CameraWidget* cameraWidget;
     GameWidget* gameWidget;
     Ui::GameWindow *ui;
+
+    void updateLabelDisplay();
 };
 
 #endif // GAMEWINDOW_H
