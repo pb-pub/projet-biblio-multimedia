@@ -87,7 +87,7 @@ int CameraWidget::openCamera() {
     if (cap.isOpened()) return 1;
     
     // Third try - try different camera index
-    cap.open("http://161.3.36.211:8000/camera/mjpeg", cv::CAP_FFMPEG);
+    cap.open("http://192.168.1.80:8000/camera/mjpeg", cv::CAP_FFMPEG);
     if (cap.isOpened()) return 1;
     
     

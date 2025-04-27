@@ -119,16 +119,16 @@ void GameWidget::initializeGL()
     glLightfv(GL_LIGHT0, GL_DIFFUSE, light_diffuse);
     glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular);
 
-    // Clear color
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    // Clear color - Change to blue for the sky
+    glClearColor(0.53f, 0.81f, 0.98f, 1.0f);  // Sky blue color
 
     initializeTextures();
 }
 
 void GameWidget::initializeTextures() {
     // Initialisation des textures - Fix array size to match number of textures (5 instead of 4)
-    textures = new GLuint[5];  // Changed from 4 to 5 to accommodate all textures including bomb
-    glGenTextures(5, textures);
+    textures = new GLuint[6];  // Increase from 5 to 6 to include floor texture
+    glGenTextures(6, textures);
     
     // Get the application directory and build absolute paths
     QDir appDir(QCoreApplication::applicationDirPath());
@@ -175,6 +175,7 @@ void GameWidget::initializeTextures() {
     QImage bananaImage(base_path + "banana.jpg");
     QImage pearImage(base_path + "pear.jpg");
     QImage bombImage(base_path + "bomb.jpg");
+    QImage floorImage(base_path + "floor.jpg");  // New floor texture
     
     // Try loading backup textures if original textures failed
     if (appleImage.isNull()) {
@@ -191,10 +192,11 @@ void GameWidget::initializeTextures() {
     bananaImage = bananaImage.convertToFormat(QImage::Format_RGBA8888);
     pearImage = pearImage.convertToFormat(QImage::Format_RGBA8888);
     bombImage = bombImage.convertToFormat(QImage::Format_RGBA8888);
+    floorImage = floorImage.convertToFormat(QImage::Format_RGBA8888);  // Convert floor image
 
     // check if images are loaded correctly
     if (appleImage.isNull() || orangeImage.isNull() || bananaImage.isNull() || 
-        pearImage.isNull() || bombImage.isNull()) {
+        pearImage.isNull() || bombImage.isNull() || floorImage.isNull()) {
         qCritical() << "Error loading texture images";
         
         // Create fallback colored textures
@@ -203,6 +205,7 @@ void GameWidget::initializeTextures() {
         bananaImage = createColorTexture(QColor(255, 255, 0));  // Yellow for banana
         pearImage = createColorTexture(QColor(0, 255, 0));      // Green for pear
         bombImage = createColorTexture(QColor(50, 50, 50));     // Dark gray for bomb
+        floorImage = createColorTexture(QColor(0, 0, 255));     // Blue for floor
     }
 
     // Apple Texture
@@ -235,8 +238,14 @@ void GameWidget::initializeTextures() {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
+    // Floor Texture
+    glBindTexture(GL_TEXTURE_2D, textures[5]);  // New texture for the floor
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, floorImage.width(), floorImage.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, floorImage.bits());
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
     glFlush();  // Ensure texture uploads are finished
-    qDebug() << "Texture IDs: " << textures[0] << " " << textures[1] << " " << textures[2] << " " << textures[3] << " " << textures[4];
+    qDebug() << "Texture IDs: " << textures[0] << " " << textures[1] << " " << textures[2] << " " << textures[3] << " " << textures[4] << " " << textures[5];
 }
 
 // Add helper method to create fallback textures
@@ -292,7 +301,7 @@ void GameWidget::paintGL()
     glLoadIdentity();
     
     // Set camera position with better positioning for perspective view
-    gluLookAt(0.0f, 1.8f, 0.0f,   // Eye position
+    gluLookAt(0.0f, 1.8f, -1.0f,   // Eye position
               0.0f, 1.0f, 25.0f,     // Look at position (center)
               0.0f, 1.0f, 0.0f);    // Up vector
 
@@ -309,29 +318,61 @@ void GameWidget::paintGL()
     gluCylinder(cylinder, 1.0f, 1.0f, 4.0f, 32, 32);
     glPopMatrix();
 
-    // Draw the ground
+    // Draw the ground with a grid pattern and texture
     glPushMatrix();
-    glTranslatef(0.0f, 0.0f, 0.0f);
-
-    // Set material properties for the floor
-    GLfloat floor_ambient[] = {0.2f, 0.2f, 0.2f, 1.0f};
-    GLfloat floor_diffuse[] = {0.5f, 0.5f, 0.5f, 1.0f};
-    GLfloat floor_specular[] = {0.0f, 0.0f, 0.0f, 1.0f}; // Non-shiny floor
+    
+    // Set material properties for the floor - adjust for texture
+    GLfloat floor_ambient[] = {0.7f, 0.7f, 0.7f, 1.0f};  // Brighter to show texture better
+    GLfloat floor_diffuse[] = {1.0f, 1.0f, 1.0f, 1.0f};  // Full diffuse to show texture
+    GLfloat floor_specular[] = {0.2f, 0.2f, 0.2f, 1.0f}; // Light specular
     glMaterialfv(GL_FRONT, GL_AMBIENT, floor_ambient);
     glMaterialfv(GL_FRONT, GL_DIFFUSE, floor_diffuse);
     glMaterialfv(GL_FRONT, GL_SPECULAR, floor_specular);
-    glMaterialf(GL_FRONT, GL_SHININESS, 0.0f);
+    glMaterialf(GL_FRONT, GL_SHININESS, 10.0f);
 
+    // Use the floor texture
+    glBindTexture(GL_TEXTURE_2D, textures[5]);
+    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+    glEnable(GL_TEXTURE_2D);
+
+    // Draw the main ground plane with texture
     glBegin(GL_QUADS);
     glNormal3f(0.0f, 1.0f, 0.0f); // Normal pointing up
-    glVertex3f(-MAX_DIMENSION, 0.0f, -MAX_DIMENSION);
-    glVertex3f(MAX_DIMENSION, 0.0f, -MAX_DIMENSION);
-    glVertex3f(MAX_DIMENSION, 0.0f, MAX_DIMENSION);
-    glVertex3f(-MAX_DIMENSION, 0.0f, MAX_DIMENSION);
+    
+    // Add texture coordinates to the ground quad
+    glTexCoord2f(0.0f, 0.0f); glVertex3f(-MAX_DIMENSION, 0.0f, -MAX_DIMENSION);
+    glTexCoord2f(5.0f, 0.0f); glVertex3f(MAX_DIMENSION, 0.0f, -MAX_DIMENSION);
+    glTexCoord2f(5.0f, 5.0f); glVertex3f(MAX_DIMENSION, 0.0f, MAX_DIMENSION);
+    glTexCoord2f(0.0f, 5.0f); glVertex3f(-MAX_DIMENSION, 0.0f, MAX_DIMENSION);
     glEnd();
+    
+    // Disable texturing before drawing the grid
+    glDisable(GL_TEXTURE_2D);
+    
+    // Add a grid pattern on top of the ground
+    GLfloat grid_diffuse[] = {0.1f, 0.4f, 0.1f, 1.0f}; // Darker green for grid lines
+    glMaterialfv(GL_FRONT, GL_DIFFUSE, grid_diffuse);
+    
+    // Draw grid lines
+    const float gridSize = 1.0f;
+    const float gridY = 0.01f; // Slightly above the ground to prevent z-fighting
+    
+    glBegin(GL_LINES);
+    // Draw lines along the Z axis
+    for (float x = -MAX_DIMENSION; x <= MAX_DIMENSION; x += gridSize) {
+        glVertex3f(x, gridY, -MAX_DIMENSION);
+        glVertex3f(x, gridY, MAX_DIMENSION);
+    }
+    
+    // Draw lines along the X axis
+    for (float z = -MAX_DIMENSION; z <= MAX_DIMENSION; z += gridSize) {
+        glVertex3f(-MAX_DIMENSION, gridY, z);
+        glVertex3f(MAX_DIMENSION, gridY, z);
+    }
+    glEnd();
+    
     glPopMatrix();
     
-
     // Draw the fruit after re-enabling lighting
     for(auto fruit : m_fruit) {
 

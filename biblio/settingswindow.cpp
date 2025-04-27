@@ -25,6 +25,7 @@ SettingsWindow::~SettingsWindow()
 void SettingsWindow::on_pushButton_clicked()
 {
     this->close();
+    this->deleteLater(); 
     MainWindow* mainWindow = new MainWindow();
     mainWindow->show();
 

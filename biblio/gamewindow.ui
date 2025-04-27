@@ -31,7 +31,26 @@
      <number>0</number>
     </property>
     <item>
-     <widget class="QWidget" name="game" native="true"/>
+     <widget class="QWidget" name="game" native="true">
+      <widget class="QLabel" name="label">
+       <property name="geometry">
+        <rect>
+         <x>1160</x>
+         <y>10</y>
+         <width>111</width>
+         <height>131</height>
+        </rect>
+       </property>
+       <property name="font">
+        <font>
+         <pointsize>15</pointsize>
+        </font>
+       </property>
+       <property name="text">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700; font-style:italic; text-decoration: underline;&quot;&gt;Score : &lt;/span&gt;&lt;/p&gt;&lt;p&gt;0&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#aa0000;&quot;&gt;✘ ✘ ✘&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
+      </widget>
+     </widget>
     </item>
    </layout>
   </widget>

@@ -188,16 +188,59 @@ void Fruit::drawBanana(QTime currentTime)
     // Add rotation based on time
     float rotationAngle = startTime.msecsTo(currentTime) / 15.0f;
     glRotatef(rotationAngle, 0.5f, 1.0f, 0.5f);
+    
+    // Position the banana properly
+    glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
 
     // Dessin de la banane (forme courbée)
     setTexture(textures[2]);
-
-    // Dessiner plusieurs segments pour simuler une forme courbée
-    for (int i = 0; i < 5; ++i) {
+    
+    // Parameters for the banana shape
+    const int numSegments = 8;
+    const float bananaLength = 0.8f;
+    const float maxRadius = 0.07f;
+    const float curvature = 0.2f;
+    
+    // Draw the banana as connected curved segments using quadrics
+    for (int i = 0; i < numSegments - 1; i++) {
+        float t1 = (float)i / (numSegments - 1);
+        float t2 = (float)(i + 1) / (numSegments - 1);
+        
+        // Calculate positions along a curved path
+        float x1 = curvature * sin(t1 * M_PI);
+        float z1 = t1 * bananaLength;
+        float x2 = curvature * sin(t2 * M_PI);
+        float z2 = t2 * bananaLength;
+        
+        // Calculate radii (thicker in middle, thinner at ends)
+        float r1 = maxRadius * sin(t1 * M_PI * 0.8f + 0.1f * M_PI);
+        float r2 = maxRadius * sin(t2 * M_PI * 0.8f + 0.1f * M_PI);
+        
+        // Position and orient the cylinder segment
         glPushMatrix();
-        glTranslatef(0.0f, 0.0f, -0.1f * i); // Décaler chaque segment
-        glRotatef(10.0f * i, 0.0f, 1.0f, 0.0f); // Courber légèrement chaque segment
-        gluCylinder(quadric, 0.1, 0.1, 0.1, 32, 32); // Segment cylindrique
+        glTranslatef(x1, 0.0f, z1);
+        
+        // Calculate direction and length
+        float dx = x2 - x1;
+        float dz = z2 - z1;
+        float length = sqrt(dx*dx + dz*dz);
+        
+        // Rotate to align with the curve
+        float angle = atan2(dx, dz) * 180.0f / M_PI;
+        glRotatef(angle, 0.0f, 1.0f, 0.0f);
+        
+        // Draw the segment
+        gluCylinder(quadric, r1, r2, length, 16, 1);
+        
+        // Draw end caps for smoother appearance
+        if (i == 0) {
+            gluDisk(quadric, 0.0, r1, 16, 1);
+        }
+        if (i == numSegments - 2) {
+            glTranslatef(0.0f, 0.0f, length);
+            gluDisk(quadric, 0.0, r2, 16, 1);
+        }
+        
         glPopMatrix();
     }
 
@@ -238,7 +281,7 @@ void Fruit::drawBomb(QTime currentTime)
     // Dessin du corps principal de la bombe (sphère)
     setTexture(textures[4]);
     gluSphere(quadric, 0.3, 32, 32);
-    glRotatef(90.0f, 1.0f, 0.0f, 0.0f); // Rotation pour aligner la texture sur les pôles
+    glRotatef(-90.0f, 1.0f, 0.0f, 0.0f); // Rotation pour aligner la texture sur les pôles
 
     // Dessin de la mèche (cylindre)
     glPushMatrix();

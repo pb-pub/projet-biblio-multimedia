@@ -12,24 +12,41 @@ GameWindow::GameWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    // // Vérifier si cameraWidget a déjà un layout
-    // if (!ui->cameraWidgetUI->layout()) {
-    //     ui->cameraWidgetUI->setLayout(new QVBoxLayout());
-    // }
-
-    // cameraWidget = new CameraWidget(this);
-    // ui->cameraWidgetUI->layout()->addWidget(cameraWidget);
-
-    // Vérifier si gameWidget a déjà un layout
     if (!ui->game->layout()) {
         ui->game->setLayout(new QVBoxLayout());
     }
     gameWidget = new GameWidget(this);
     ui->game->layout()->addWidget(gameWidget);
 
-
-
-
+    // Assurer que le label est visible au-dessus du GameWidget
+    if (ui->label) {
+        // Configurer le label pour qu'il soit au premier plan
+        ui->label->raise();
+        
+        // Appliquer un style pour améliorer la visibilité
+        ui->label->setStyleSheet(
+            "QLabel { "
+            "   color: white; "
+            "   background-color: rgba(0, 0, 0, 150); " // Fond semi-transparent
+            "   border-radius: 10px; "
+            "   padding: 5px; "
+            "   font-size: 14pt; "
+            "   font-weight: bold; "
+            "}"
+        );
+        
+        // S'assurer que le label est au premier plan
+        ui->label->setParent(this);
+        ui->label->setAttribute(Qt::WA_TransparentForMouseEvents);
+        ui->label->show();
+        
+        
+        // Repositionner le label sur le dessus si nécessaire
+        QTimer::singleShot(100, [this]() {
+            ui->label->raise();
+            std::cout << ui->label->text().toStdString() << std::endl;
+        });
+    } 
 }
 
 GameWindow::~GameWindow()
