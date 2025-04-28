@@ -17,9 +17,9 @@ CameraHandler::~CameraHandler()
 
 bool CameraHandler::loadFaceCascade()
 {
-    QString cascadePath = "/Users/ismail/projet-biblio-multimedia/biblio/assets/haarcascade_frontalface_alt.xml";
+    QString cascadePath = "/Users/ismail/projet-biblio-multimedia/biblio/assets/fist.xml";
     if (!faceCascade.load(cascadePath.toStdString())) {
-        cascadePath = "./../../../biblio/assets/haarcascade_frontalface_alt.xml";
+        cascadePath = "./../../../biblio/assets/fist.xml";
         if (!faceCascade.load(cascadePath.toStdString())) {
             qDebug() << "Error: Could not load Haar Cascade from" << cascadePath;
             return false;
@@ -84,7 +84,7 @@ std::vector<cv::Point> CameraHandler::detectFaces(cv::Mat& frame, cv::Mat& grayF
     // Detect faces only if cascade was loaded
     if (!faceCascade.empty()) {
         std::vector<cv::Rect> faces;
-        faceCascade.detectMultiScale(grayFrame, faces, 1.1, 4, 
+        faceCascade.detectMultiScale(grayFrame, faces, 1.1, 6, 
                                     0 | cv::CASCADE_FIND_BIGGEST_OBJECT | cv::CASCADE_SCALE_IMAGE, 
                                     cv::Size(30, 30), cv::Size(300, 300));
         
