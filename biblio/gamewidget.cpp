@@ -16,7 +16,7 @@
 #include <QDebug>
 
 // Constants
-const float MAX_DIMENSION = 10.0f;
+const float MAX_DIMENSION = 33.0f;
 
 GameWidget::GameWidget(QWidget *parent)
     : QWidget(parent)
@@ -29,6 +29,7 @@ GameWidget::GameWidget(QWidget *parent)
     QTimer* timer = new QTimer(this);
     connect(timer, &QTimer::timeout, this, &GameWidget::updateFruitDisplay);
     timer->start(16); // ~60 FPS
+
 
     if (ui->openGLWidget) {
         class CustomGLWidget : public QOpenGLWidget {
@@ -137,9 +138,9 @@ void GameWidget::initializeGL()
 }
 
 void GameWidget::initializeTextures() {
-    // Initialisation des textures - Fix array size to match number of textures (5 instead of 4)
-    textures = new GLuint[6];  // Increase from 5 to 6 to include floor texture
-    glGenTextures(6, textures);
+    // Increase array size to include cannon texture
+    textures = new GLuint[7];  // Changed from 6 to 7 to include cannon texture
+    glGenTextures(7, textures);
     
     // Get the application directory and build absolute paths
     QDir appDir(QCoreApplication::applicationDirPath());
@@ -186,7 +187,8 @@ void GameWidget::initializeTextures() {
     QImage bananaImage(base_path + "banana.jpg");
     QImage pearImage(base_path + "pear.jpg");
     QImage bombImage(base_path + "bomb.jpg");
-    QImage floorImage(base_path + "floor.jpg");  // New floor texture
+    QImage floorImage(base_path + "floor.jpg");
+    QImage cannonImage(base_path + "cannon.jpg");  // New cannon texture
     
     // Try loading backup textures if original textures failed
     if (appleImage.isNull()) {
@@ -204,10 +206,12 @@ void GameWidget::initializeTextures() {
     pearImage = pearImage.convertToFormat(QImage::Format_RGBA8888);
     bombImage = bombImage.convertToFormat(QImage::Format_RGBA8888);
     floorImage = floorImage.convertToFormat(QImage::Format_RGBA8888);  // Convert floor image
+    cannonImage = cannonImage.convertToFormat(QImage::Format_RGBA8888);  // Convert cannon image
 
     // check if images are loaded correctly
     if (appleImage.isNull() || orangeImage.isNull() || bananaImage.isNull() || 
-        pearImage.isNull() || bombImage.isNull() || floorImage.isNull()) {
+        pearImage.isNull() || bombImage.isNull() || floorImage.isNull() || 
+        cannonImage.isNull()) {
         qCritical() << "Error loading texture images";
         
         // Create fallback colored textures
@@ -217,6 +221,7 @@ void GameWidget::initializeTextures() {
         pearImage = createColorTexture(QColor(0, 255, 0));      // Green for pear
         bombImage = createColorTexture(QColor(50, 50, 50));     // Dark gray for bomb
         floorImage = createColorTexture(QColor(0, 0, 255));     // Blue for floor
+        cannonImage = createColorTexture(QColor(100, 100, 100)); // Gray for cannon
     }
 
     // Apple Texture
@@ -250,13 +255,23 @@ void GameWidget::initializeTextures() {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
     // Floor Texture
-    glBindTexture(GL_TEXTURE_2D, textures[5]);  // New texture for the floor
+    glBindTexture(GL_TEXTURE_2D, textures[5]);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, floorImage.width(), floorImage.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, floorImage.bits());
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
+    // Cannon Texture
+    glBindTexture(GL_TEXTURE_2D, textures[6]);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, cannonImage.width(), cannonImage.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, cannonImage.bits());
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
     glFlush();  // Ensure texture uploads are finished
-    qDebug() << "Texture IDs: " << textures[0] << " " << textures[1] << " " << textures[2] << " " << textures[3] << " " << textures[4] << " " << textures[5];
+    qDebug() << "Texture IDs: " << textures[0] << " " << textures[1] << " " << textures[2] << " " 
+             << textures[3] << " " << textures[4] << " " << textures[5] << " " << textures[6];
+             
+    // Set the cannon texture
+    cannon.setTexture(textures[6]);
 }
 
 // Add helper method to create fallback textures
@@ -264,6 +279,18 @@ QImage GameWidget::createColorTexture(const QColor& color) {
     QImage img(256, 256, QImage::Format_RGBA8888);
     img.fill(color);
     return img;
+}
+
+// Add new createFruit function
+Fruit* GameWidget::createFruit() {
+    Fruit* newFruit = new Fruit(textures, QTime::currentTime());
+    m_fruit.push_back(newFruit);
+    
+    // Notify the cannon about the new fruit's direction
+    QVector3D fruitDirection = newFruit->getInitialDirection();
+    cannon.onFruitCreated(fruitDirection);
+    
+    return newFruit;
 }
 
 void GameWidget::startCountdown(int seconds) {
@@ -278,7 +305,8 @@ void GameWidget::startCountdown(int seconds) {
             delete countdownTimer;
             delete label; // Delete the label after countdown
 
-            m_fruit.push_back(new Fruit(textures, QTime::currentTime()));
+            // Use the new createFruit function instead of direct creation
+            createFruit();
         }
     });
     countdownTimer->start(1000); // Update every second
@@ -313,12 +341,16 @@ void GameWidget::paintGL()
     
     // Set camera position with better positioning for perspective view
     gluLookAt(0.0f, 1.8f, -1.0f,   // Eye position
+    // gluLookAt(2.0f, 1.8f, 20.f,        // testing eye position
               0.0f, 1.0f, 25.0f,     // Look at position (center)
               0.0f, 1.0f, 0.0f);    // Up vector
 
     // Réinitialiser la position de la lumière après le changement de vue
     GLfloat light_position[] = { 5.0f, 5.0f, 5.0f, 1.0f };
     glLightfv(GL_LIGHT0, GL_POSITION, light_position);
+    
+    // Draw the cannon
+    cannon.drawCannon();
     
     // Draw a cylinder around the player (in 0,y,0)
     glPushMatrix();
@@ -350,11 +382,13 @@ void GameWidget::paintGL()
     glBegin(GL_QUADS);
     glNormal3f(0.0f, 1.0f, 0.0f); // Normal pointing up
     
-    // Add texture coordinates to the ground quad
+    const float textureRepetition = 20.0f;  // Higher number = more repetition, less stretching
+    
+    // Add texture coordinates to the ground quad with more repetition
     glTexCoord2f(0.0f, 0.0f); glVertex3f(-MAX_DIMENSION, 0.0f, -MAX_DIMENSION);
-    glTexCoord2f(5.0f, 0.0f); glVertex3f(MAX_DIMENSION, 0.0f, -MAX_DIMENSION);
-    glTexCoord2f(5.0f, 5.0f); glVertex3f(MAX_DIMENSION, 0.0f, MAX_DIMENSION);
-    glTexCoord2f(0.0f, 5.0f); glVertex3f(-MAX_DIMENSION, 0.0f, MAX_DIMENSION);
+    glTexCoord2f(textureRepetition, 0.0f); glVertex3f(MAX_DIMENSION, 0.0f, -MAX_DIMENSION);
+    glTexCoord2f(textureRepetition, textureRepetition); glVertex3f(MAX_DIMENSION, 0.0f, MAX_DIMENSION);
+    glTexCoord2f(0.0f, textureRepetition); glVertex3f(-MAX_DIMENSION, 0.0f, MAX_DIMENSION);
     glEnd();
     
     // Disable texturing before drawing the grid
@@ -392,7 +426,8 @@ void GameWidget::paintGL()
             delete fruit;
             m_fruit.erase(std::remove(m_fruit.begin(), m_fruit.end(), fruit), m_fruit.end());
             
-            m_fruit.push_back(new Fruit(textures, QTime::currentTime()));
+            // Use the new createFruit function instead of direct creation
+            createFruit();
             continue;
         }
         else {
@@ -465,6 +500,7 @@ void GameWidget::updateFrame()
         // Check if any detected point intersects with fruits
         QTime currentTime = QTime::currentTime();
         
+        
         for (const auto& point : detectedPoints) {
             std::vector<Fruit*> fruitsToRemove;
             
@@ -486,8 +522,8 @@ void GameWidget::updateFrame()
             for (auto fruitToRemove : fruitsToRemove) {
                 m_fruit.erase(std::remove(m_fruit.begin(), m_fruit.end(), fruitToRemove), m_fruit.end());
                 delete fruitToRemove;
-                // Add a new fruit to replace the one we removed
-                m_fruit.push_back(new Fruit(textures, currentTime));
+                // Use the new createFruit function instead of direct creation
+                createFruit();
             }
         }
         

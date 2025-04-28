@@ -30,6 +30,7 @@ public:
     void setType(FruitType type);
     void draw(QTime currentTime);
     QVector3D getPosition(QTime currentTime);
+    QVector3D getInitialDirection() { return initalSpeed; }
     
 private :
     FruitType currentFruit;

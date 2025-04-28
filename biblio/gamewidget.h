@@ -12,6 +12,7 @@
 #include <QDebug>
 #include <QTimer>
 #include "camerahandler.h"
+#include "cannon.h" // Add this include
 
 namespace Ui {
 class GameWidget;
@@ -54,9 +55,12 @@ private:
     bool cameraInitialized = false;
     QVector3D projectedPoint;
     bool hasProjectedPoint = false;
+    Cannon cannon; // Add the cannon member
     
     // Helper method to create fallback colored textures
     QImage createColorTexture(const QColor& color);
+    Fruit* createFruit();
+    
     void initializeCamera();
     bool isFruitHit(const cv::Point& point, Fruit* fruit, QTime currentTime);
     void convertCameraPointToGameSpace(const cv::Point& cameraPoint, float& gameX, float& gameZ);

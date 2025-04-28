@@ -10,7 +10,10 @@ Fruit::Fruit(FruitType type, GLuint *textureids, QTime currentTime, QVector3D in
     gluQuadricDrawStyle(quadric, GLU_FILL);
     gluQuadricNormals(quadric, GLU_SMOOTH);
     gluQuadricTexture(quadric, GL_TRUE);
+
 }
+
+
 Fruit::Fruit(FruitType type, GLuint *textureids, QTime currentTime) : currentFruit(type), textures(textureids), startTime(currentTime), initalSpeed(QVector3D(1, 7, -20)), initialPosition(QVector3D(0, 1, 30))
 {
 
@@ -18,6 +21,7 @@ Fruit::Fruit(FruitType type, GLuint *textureids, QTime currentTime) : currentFru
     gluQuadricDrawStyle(quadric, GLU_FILL);
     gluQuadricNormals(quadric, GLU_SMOOTH);
     gluQuadricTexture(quadric, GL_TRUE);
+
 }
 
 Fruit::Fruit(GLuint* textureids, QTime currentTime) : textures(textureids), startTime(currentTime), initialPosition(QVector3D(0, 1, 30))
@@ -30,6 +34,7 @@ Fruit::Fruit(GLuint* textureids, QTime currentTime) : textures(textureids), star
     gluQuadricDrawStyle(quadric, GLU_FILL);
     gluQuadricNormals(quadric, GLU_SMOOTH);
     gluQuadricTexture(quadric, GL_TRUE);
+
 }
 
 Fruit::~Fruit()
@@ -73,30 +78,6 @@ void Fruit::setType(FruitType type)
     currentFruit = type;
 }
 
-// void Fruit::draw(const float time) {
-//     // Position the fruit
-
-//     std::cout << "Drawing fruit type: " << currentFruit << std::endl;
-
-//     // initializeTextures();
-//     glPushMatrix();
-
-//     GLfloat ambient[] = { 0.2f, 0.2f, 0.2f, 1.0f };
-//     GLfloat diffuse[] = { 0.8f, 0.8f, 0.8f, 1.0f };
-//     GLfloat specular[] = { 1.0f, 1.0f, 1.0f, 1.0f };
-//     GLfloat shininess = 0.0f;
-//     setMaterial(ambient, diffuse, specular, &shininess);
-
-//     std::cout << "Texture id : " << textures[1] << std::endl;
-//     setTexture(textures[1]);
-
-//     // Correction de l'orientation de la texture
-//     glRotatef(90.0f, 1.0f, 0.0f, 0.0f);  // Rotation pour aligner la texture sur les pôles
-//     gluSphere(quadric, 1, 32, 32);
-
-//     glDisable(GL_TEXTURE_2D);
-//     glPopMatrix();
-// }
 
 void Fruit::draw(QTime currentTime)
 {
@@ -298,7 +279,7 @@ void Fruit::drawBomb(QTime currentTime)
 QVector3D Fruit::getPosition(QTime currentTime)
 {
     // Calculate the position of the fruit based on its trajectory
-    float t = startTime.msecsTo(currentTime) / 1000.0f;
+    
     float deltaT = startTime.msecsTo(currentTime) / 1000.0f;
     float x = initalSpeed.x() * deltaT + initialPosition.x();
     float y = initalSpeed.y() * deltaT + initialPosition.y() - (0.5f * 9.81f * deltaT * deltaT);
