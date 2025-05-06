@@ -1,6 +1,7 @@
 #include "gamewindow.h"
 #include "ui_gamewindow.h"
 #include "mainwindow.h"
+#include "gameoverdialog.h" // Added include for GameOverDialog
 
 
 #include <QVBoxLayout>
@@ -36,8 +37,15 @@ GameWindow::GameWindow(QWidget *parent)
         
         // Check if game over
         if (lives <= 0) {
-            // Handle game over here if needed
-            // For example: QMessageBox::information(this, "Game Over", "No more lives remaining!");
+            // Handle game over
+            int finalScore = score; // Capture score before closing
+            this->close(); // Close the current game window
+
+            GameOverDialog gameOverDialog(finalScore, nullptr); // Pass the score
+            gameOverDialog.exec(); // Show the dialog modally
+            // Execution will resume here after the dialog is closed.
+            // If "New Game" was clicked, a new GameWindow is already shown.
+            // If "Exit" was clicked, the application is quitting.
         }
     });
 
@@ -75,7 +83,9 @@ GameWindow::GameWindow(QWidget *parent)
 GameWindow::~GameWindow()
 {
     delete ui;
+    delete gameWidget; // Clean up the game widget
 }
+
 void GameWindow::updateLabelDisplay()
 {
     QString lives = "";

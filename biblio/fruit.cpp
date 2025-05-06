@@ -65,9 +65,9 @@ Fruit::FruitType Fruit::getRandomFruitType()
 QVector3D Fruit::getRandomInitSpeed()
 {
     // Generate a random speed vector
-    float x = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 4.0f - 2.0f; // Random value between -2 and 2
-    float y = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 4.0f + 3.0f; // Random value between 3 and 7
-    float z = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 10.0f - 35.0f; // Random value between -35 and -25
+    float x = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 3.0f - 1.5f; // Random value between -2 and 2
+    float y = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 1.8f + 4.8f; // Random value between 3 and 7
+    float z = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 8.0f - 32.0f; // Random value between -35 and -25
     return QVector3D(x, y, z);
 }
 
@@ -128,14 +128,49 @@ void Fruit::drawApple(QTime currentTime)
     float rotationAngle = startTime.msecsTo(currentTime) / 20.0f; // Adjust divisor for rotation speed
     glRotatef(rotationAngle, 0.0f, 1.0f, 0.3f); // Rotate around a slightly tilted axis
     
-    glRotatef(90.0f, 1.0f, 0.0f, 0.0f); // Rotation for texture alignment
-
+    // Set color to white before texturing to avoid tinting the texture
+    glColor3f(1.0f, 1.0f, 1.0f); 
     // Desin du corps de la pomme (avec la texture)
     setTexture(textures[0]);
+    glPushMatrix(); // Apple body rotation
+    glRotatef(90.0f, 1.0f, 0.0f, 0.0f); // Rotation for texture alignment
     gluSphere(quadric, 0.3, 32, 32);
-
+    glPopMatrix(); // End apple body rotation
     glDisable(GL_TEXTURE_2D);
-    glPopMatrix(); // Added missing glPopMatrix()
+
+    // Dessin de la tige (stem)
+    // Set material for the stem (e.g., brown)
+    GLfloat stemAmbient[] = {0.4f, 0.2f, 0.0f, 1.0f};
+    GLfloat stemDiffuse[] = {0.5f, 0.25f, 0.0f, 1.0f};
+    GLfloat stemSpecular[] = {0.1f, 0.05f, 0.0f, 1.0f};
+    GLfloat stemShininess[] = {10.0f};
+    setMaterial(stemAmbient, stemDiffuse, stemSpecular, stemShininess);
+    glColor3fv(stemDiffuse); // Set color for stem, works with GL_COLOR_MATERIAL
+
+    glPushMatrix();
+    glTranslatef(0.0f, 0.3f, 0.0f); // Position the stem on top of the apple
+    glRotatef(-90.0f, 1.0f, 0.0f, 0.0f); // Orient the stem upwards
+    gluCylinder(quadric, 0.02, 0.015, 0.15, 16, 16); // Stem
+    glPopMatrix();
+
+    // Dessin du calice (bottom part)
+    // Set material for the calyx (e.g., dark green/brown)
+    GLfloat calyxAmbient[] = {0.1f, 0.1f, 0.0f, 1.0f};
+    GLfloat calyxDiffuse[] = {0.2f, 0.2f, 0.0f, 1.0f};
+    GLfloat calyxSpecular[] = {0.05f, 0.05f, 0.0f, 1.0f};
+    GLfloat calyxShininess[] = {5.0f};
+    setMaterial(calyxAmbient, calyxDiffuse, calyxSpecular, calyxShininess);
+    glColor3fv(calyxDiffuse); // Set color for calyx
+
+    glPushMatrix();
+    glTranslatef(0.0f, -0.28f, 0.0f); // Position the calyx at the bottom
+    gluSphere(quadric, 0.05, 16, 16); // Calyx as a small sphere
+    glPopMatrix();
+
+    // Reset color to white so it doesn't affect other objects
+    glColor3f(1.0f, 1.0f, 1.0f);
+
+    glPopMatrix(); // Main apple matrix
 }
 
 void Fruit::drawOrange(QTime currentTime)
@@ -151,6 +186,8 @@ void Fruit::drawOrange(QTime currentTime)
     
     glRotatef(90.0f, 1.0f, 0.0f, 0.0f); // Rotation pour aligner la texture sur les pôles
 
+    // Set color to white before texturing
+    glColor3f(1.0f, 1.0f, 1.0f);
     // Dessin de l'orange (avec la texture)
     setTexture(textures[1]);
     gluSphere(quadric, 0.3, 32, 32);
@@ -173,6 +210,8 @@ void Fruit::drawBanana(QTime currentTime)
     // Position the banana properly
     glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
 
+    // Set color to white before texturing
+    glColor3f(1.0f, 1.0f, 1.0f);
     // Dessin de la banane (forme courbée)
     setTexture(textures[2]);
     
@@ -226,6 +265,8 @@ void Fruit::drawBanana(QTime currentTime)
     }
 
     glDisable(GL_TEXTURE_2D);
+    // Reset color to white after drawing banana parts if any non-textured parts were colored
+    glColor3f(1.0f, 1.0f, 1.0f);
     glPopMatrix();
 }
 
@@ -241,6 +282,8 @@ void Fruit::drawPear(QTime currentTime)
     glRotatef(rotationAngle, 0.3f, 1.0f, 0.2f);
     
     glRotatef(90.0f, 1.0f, 0.0f, 0.0f); // Rotation pour aligner la texture sur les pôles
+    // Set color to white before texturing
+    glColor3f(1.0f, 1.0f, 1.0f);
     // Dessin de la poire (avec la texture)
     setTexture(textures[3]);
     gluSphere(quadric, 0.3, 32, 32);
@@ -259,20 +302,36 @@ void Fruit::drawBomb(QTime currentTime)
     float rotationAngle = startTime.msecsTo(currentTime) / 10.0f; 
     glRotatef(rotationAngle, 0.0f, -1.0f, 0.0f);
     
+    // Set color to white before texturing the bomb body
+    glColor3f(1.0f, 1.0f, 1.0f);
     // Dessin du corps principal de la bombe (sphère)
     setTexture(textures[4]);
+    glPushMatrix(); // Bomb body rotation
+    glRotatef(90.0f, 1.0f, 0.0f, 0.0f); // Rotation pour aligner la texture sur les pôles
     gluSphere(quadric, 0.3, 32, 32);
-    glRotatef(-90.0f, 1.0f, 0.0f, 0.0f); // Rotation pour aligner la texture sur les pôles
+    glPopMatrix(); // End bomb body rotation
+    glDisable(GL_TEXTURE_2D);
+
 
     // Dessin de la mèche (cylindre)
+    // Set material for the fuse (e.g., grey/dark yellow)
+    GLfloat fuseAmbient[] = {0.2f, 0.2f, 0.1f, 1.0f};
+    GLfloat fuseDiffuse[] = {0.4f, 0.4f, 0.2f, 1.0f};
+    GLfloat fuseSpecular[] = {0.1f, 0.1f, 0.05f, 1.0f};
+    GLfloat fuseShininess[] = {5.0f};
+    setMaterial(fuseAmbient, fuseDiffuse, fuseSpecular, fuseShininess);
+    glColor3fv(fuseDiffuse); // Set color for fuse
+
     glPushMatrix();
-    glTranslatef(0.0f, 0.35f, 0.0f); // Positionner la mèche au-dessus de la sphère
+    glTranslatef(0.0f, 0.3f, 0.0f); // Positionner la mèche au-dessus de la sphère
     glRotatef(-90.0f, 1.0f, 0.0f, 0.0f); // Aligner le cylindre verticalement
-    gluCylinder(quadric, 0.05, 0.05, 0.2, 16, 16); // Cylindre pour la mèche
+    gluCylinder(quadric, 0.02, 0.02, 0.2, 16, 16); // Cylindre pour la mèche
     glPopMatrix();
 
-    // Désactiver la texture
-    glDisable(GL_TEXTURE_2D);
+    // Reset color to white so it doesn't affect other objects
+    glColor3f(1.0f, 1.0f, 1.0f);
+    // Désactiver la texture (already disabled after bomb body)
+    // glDisable(GL_TEXTURE_2D); // This was here, but texture is already disabled.
     glPopMatrix();
 }
 

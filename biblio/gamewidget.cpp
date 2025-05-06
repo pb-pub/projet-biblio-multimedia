@@ -100,6 +100,7 @@ GameWidget::~GameWidget()
     if (cylinder) {
         gluDeleteQuadric(cylinder);
     }
+
 }
 
 void GameWidget::updateFruitDisplay()

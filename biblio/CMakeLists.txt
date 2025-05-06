@@ -33,7 +33,7 @@ qt_add_executable(biblio
     gamewidget.h gamewidget.cpp gamewidget.ui
     camerahandler.h camerahandler.cpp
     cannon.h cannon.cpp
-    
+    gameoverdialog.h gameoverdialog.cpp
     fruit.h fruit.cpp
     settingswindow.h settingswindow.cpp settingswindow.ui
     haarcascade_frontalface_alt.xml
