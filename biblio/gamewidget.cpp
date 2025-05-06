@@ -453,10 +453,9 @@ void GameWidget::paintGL()
         // Move to the projected point
         glTranslatef(projectedPoint.x(), projectedPoint.y(), projectedPoint.z());
         
-        // Draw a sphere (small ball with radius 0.15)
         GLUquadric* ball = gluNewQuadric();
         gluQuadricDrawStyle(ball, GLU_FILL);
-        gluSphere(ball, 0.15f, 16, 16);
+        gluSphere(ball, 0.05f, 16, 16);
         gluDeleteQuadric(ball);
         
         glPopMatrix();
@@ -538,8 +537,8 @@ void GameWidget::convertCameraPointToGameSpace(const cv::Point& cameraPoint, flo
     int camWidth = currentFrame.cols;
     int camHeight = currentFrame.rows;
     
-    // Map camera X coordinate to angle around cylinder (0 to 2π)
-    float angle = M_PI - ((float)cameraPoint.x / camWidth) * M_PI;
+    // Map camera X coordinate to angle around cylinder (0 to π)
+    float angle =  M_PI - ((float)cameraPoint.x / camWidth) * M_PI;
     
     // Map camera Y coordinate to height on cylinder (0 to 4)
     float cylinderHeight = 4.0f * (1.0f - (float)cameraPoint.y / camHeight);
