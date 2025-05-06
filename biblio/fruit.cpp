@@ -176,7 +176,7 @@ void Fruit::drawApple(QTime currentTime)
 void Fruit::drawOrange(QTime currentTime)
 {
     // Positionnement de l'orange
-    glPushMatrix();
+    glPushMatrix(); // Main orange transform
     QVector3D position = getPosition(currentTime);
     glTranslatef(position.x(), position.y(), position.z());
     
@@ -184,16 +184,48 @@ void Fruit::drawOrange(QTime currentTime)
     float rotationAngle = startTime.msecsTo(currentTime) / 18.0f;
     glRotatef(rotationAngle, 0.2f, 1.0f, 0.0f);
     
-    glRotatef(90.0f, 1.0f, 0.0f, 0.0f); // Rotation pour aligner la texture sur les pôles
-
-    // Set color to white before texturing
+    // Set color to white before texturing the main body
     glColor3f(1.0f, 1.0f, 1.0f);
     // Dessin de l'orange (avec la texture)
     setTexture(textures[1]);
-    gluSphere(quadric, 0.3, 32, 32);
-
+    glPushMatrix(); // Orange body rotation
+    glRotatef(90.0f, 1.0f, 0.0f, 0.0f); // Rotation pour aligner la texture sur les pôles
+    gluSphere(quadric, 0.3, 32, 32); // Main orange body
+    glPopMatrix(); // End orange body rotation
     glDisable(GL_TEXTURE_2D);
-    glPopMatrix(); // Added missing glPopMatrix()
+
+    // Dessin du "nombril" (calice/navel) de l'orange
+    GLfloat navelAmbient[] = {0.3f, 0.15f, 0.0f, 1.0f}; // Darker orange/brown
+    GLfloat navelDiffuse[] = {0.4f, 0.2f, 0.05f, 1.0f};
+    GLfloat navelSpecular[] = {0.1f, 0.05f, 0.0f, 1.0f};
+    GLfloat navelShininess[] = {5.0f};
+    setMaterial(navelAmbient, navelDiffuse, navelSpecular, navelShininess);
+    glColor3fv(navelDiffuse);
+
+    glPushMatrix();
+    glTranslatef(0.0f, -0.29f, 0.0f); // Position at the bottom of the orange
+    gluSphere(quadric, 0.04, 16, 16); // Small sphere for the navel
+    glPopMatrix();
+
+    // Dessin d'une petite indication de tige/feuille verte
+    GLfloat stemLeafAmbient[] = {0.0f, 0.2f, 0.0f, 1.0f}; // Greenish
+    GLfloat stemLeafDiffuse[] = {0.0f, 0.3f, 0.0f, 1.0f};
+    GLfloat stemLeafSpecular[] = {0.0f, 0.1f, 0.0f, 1.0f};
+    GLfloat stemLeafShininess[] = {10.0f};
+    setMaterial(stemLeafAmbient, stemLeafDiffuse, stemLeafSpecular, stemLeafShininess);
+    glColor3fv(stemLeafDiffuse);
+
+    glPushMatrix();
+    glTranslatef(0.0f, 0.3f, 0.0f); // Position at the top
+    // Optional: make it a very short, wide cylinder or a tiny sphere
+    // gluCylinder(quadric, 0.03, 0.02, 0.05, 12, 1);
+    gluSphere(quadric, 0.03, 12, 12); // Tiny sphere for stem/leaf spot
+    glPopMatrix();
+
+    // Reset color to white so it doesn't affect other objects
+    glColor3f(1.0f, 1.0f, 1.0f);
+
+    glPopMatrix(); // End main orange transform
 }
 
 void Fruit::drawBanana(QTime currentTime)
@@ -273,22 +305,70 @@ void Fruit::drawBanana(QTime currentTime)
 void Fruit::drawPear(QTime currentTime)
 {
     // Positionnement
-    glPushMatrix();
+    glPushMatrix(); // Main pear transform
     QVector3D position = getPosition(currentTime);
     glTranslatef(position.x(), position.y(), position.z());
     
-    // Add rotation based on time
+    // Add rotation based on time for the whole pear
     float rotationAngle = startTime.msecsTo(currentTime) / 22.0f;
-    glRotatef(rotationAngle, 0.3f, 1.0f, 0.2f);
-    
-    glRotatef(90.0f, 1.0f, 0.0f, 0.0f); // Rotation pour aligner la texture sur les pôles
-    // Set color to white before texturing
+    glRotatef(rotationAngle, 0.3f, 1.0f, 0.2f); // Rotate the whole pear
+
+    // Set color to white for textured parts to avoid tinting
     glColor3f(1.0f, 1.0f, 1.0f);
-    // Dessin de la poire (avec la texture)
+    
+    // Enable and set texture for pear body parts
     setTexture(textures[3]);
-    gluSphere(quadric, 0.3, 32, 32);
-    glDisable(GL_TEXTURE_2D);
-    glPopMatrix(); // Added missing glPopMatrix()
+
+    // Bottom Part (Main Body of the Pear)
+    glPushMatrix();
+    glTranslatef(0.0f, -0.05f, 0.0f);   // Position the lower, wider part slightly down
+    glRotatef(90.0f, 1.0f, 0.0f, 0.0f); // Align texture poles correctly
+    gluSphere(quadric, 0.22f, 32, 32);  // Main bottom part, radius 0.22
+    glPopMatrix();
+
+    // Top Part (Neck of the Pear)
+    glPushMatrix();
+    glTranslatef(0.0f, 0.18f, 0.0f);   // Position the upper, narrower part
+    glScalef(0.75f, 1.3f, 0.75f);      // Scale to make it narrower and taller, creating the pear neck shape
+    glRotatef(90.0f, 1.0f, 0.0f, 0.0f); // Align texture poles correctly
+    gluSphere(quadric, 0.15f, 32, 32);  // Neck part, radius 0.15 before scaling
+    glPopMatrix();
+    
+    glDisable(GL_TEXTURE_2D); // Disable texturing after drawing textured parts
+
+    // Dessin de la tige (Stem)
+    GLfloat stemAmbient[] = {0.4f, 0.2f, 0.0f, 1.0f}; // Brownish color for the stem
+    GLfloat stemDiffuse[] = {0.5f, 0.25f, 0.0f, 1.0f};
+    GLfloat stemSpecular[] = {0.1f, 0.05f, 0.0f, 1.0f};
+    GLfloat stemShininess[] = {10.0f};
+    setMaterial(stemAmbient, stemDiffuse, stemSpecular, stemShininess);
+    glColor3fv(stemDiffuse); // Apply diffuse color for the stem
+
+    glPushMatrix();
+    // Position stem at the top of the neck. Neck top Y is approx: 0.18 (translate) + 0.15*1.3 (scaled radius) = 0.375
+    glTranslatef(0.0f, 0.37f, 0.0f); 
+    glRotatef(-90.0f, 1.0f, 0.0f, 0.0f); // Orient stem upwards
+    gluCylinder(quadric, 0.02f, 0.015f, 0.12f, 16, 16); // Stem dimensions
+    glPopMatrix();
+
+    // Dessin du calice (Bottom part of the pear)
+    GLfloat calyxAmbient[] = {0.1f, 0.1f, 0.0f, 1.0f}; // Dark color for the calyx
+    GLfloat calyxDiffuse[] = {0.2f, 0.2f, 0.0f, 1.0f};
+    GLfloat calyxSpecular[] = {0.05f, 0.05f, 0.0f, 1.0f};
+    GLfloat calyxShininess[] = {5.0f};
+    setMaterial(calyxAmbient, calyxDiffuse, calyxSpecular, calyxShininess);
+    glColor3fv(calyxDiffuse); // Apply diffuse color for the calyx
+
+    glPushMatrix();
+    // Position calyx at the bottom. Base bottom Y is approx: -0.05 (translate) - 0.22 (radius) = -0.27
+    glTranslatef(0.0f, -0.27f, 0.0f); 
+    gluSphere(quadric, 0.05f, 16, 16); // Calyx as a small sphere
+    glPopMatrix();
+
+    // Reset color to white to avoid affecting subsequent drawings
+    glColor3f(1.0f, 1.0f, 1.0f);
+
+    glPopMatrix(); // End main pear transform
 }
 
 void Fruit::drawBomb(QTime currentTime)
