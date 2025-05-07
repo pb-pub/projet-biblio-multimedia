@@ -28,7 +28,7 @@ GameWidget::GameWidget(QWidget *parent)
     // Set up a timer for animation updates 
     QTimer* timer = new QTimer(this);
     connect(timer, &QTimer::timeout, this, &GameWidget::updateFruitDisplay);
-    timer->start(16); // ~60 FPS
+    timer->start(50); // ~60 FPS
 
 
     if (ui->openGLWidget) {
@@ -101,6 +101,7 @@ GameWidget::~GameWidget()
         gluDeleteQuadric(cylinder);
     }
 
+    delete cameraHandler;
 }
 
 void GameWidget::updateFruitDisplay()
@@ -464,8 +465,9 @@ void GameWidget::paintGL()
 
 void GameWidget::initializeCamera()
 {
+    cameraHandler = new CameraHandler();
     // Try to open the camera
-    int openStatus = cameraHandler.openCamera();
+    int openStatus = cameraHandler->openCamera();
     
     if (openStatus > 0) {
         // Camera opened successfully
@@ -485,17 +487,17 @@ void GameWidget::initializeCamera()
 
 void GameWidget::updateFrame()
 {
-    if (!cameraInitialized || !cameraHandler.isOpened()) {
+    if (!cameraInitialized || !cameraHandler->isOpened()) {
         return;
     }
     
     // Get new frame from camera
-    if (cameraHandler.getFrame(currentFrame)) {
+    if (cameraHandler->getFrame(currentFrame)) {
         // Convert to grayscale for face detection
         cv::cvtColor(currentFrame, grayFrame, cv::COLOR_BGR2GRAY);
         
         // Detect faces
-        std::vector<cv::Point> detectedPoints = cameraHandler.detectFaces(currentFrame, grayFrame, false);
+        std::vector<cv::Point> detectedPoints = cameraHandler->detectFaces(currentFrame, grayFrame, false);
         
         // Check if any detected point intersects with fruits
         QTime currentTime = QTime::currentTime();

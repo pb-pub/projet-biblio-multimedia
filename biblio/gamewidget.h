@@ -48,7 +48,7 @@ private:
     QFont m_font;   
     QLabel* label;
     GLUquadric* cylinder;
-    CameraHandler cameraHandler;
+    CameraHandler* cameraHandler;
     QTimer *cameraTimer;
     cv::Mat currentFrame;
     cv::Mat grayFrame;

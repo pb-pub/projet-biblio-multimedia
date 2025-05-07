@@ -53,6 +53,9 @@ int CameraHandler::openCamera()
     // Third try - try different camera index
     cap.open("http://192.168.1.80:8000/camera/mjpeg", cv::CAP_FFMPEG);
     if (cap.isOpened()) return 1;
+
+    cap.open("http://161.3.37.158:8000/camera/mjpeg", cv::CAP_FFMPEG);
+    if (cap.isOpened()) return 1;
     
     qDebug() << "Error: Could not open camera or video source";
     return 0; // Return 0 for other errors
