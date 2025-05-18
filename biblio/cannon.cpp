@@ -36,7 +36,7 @@ void Cannon::drawCannon()
     // Draw the cannon base (cubic) with texture
     glPushMatrix();
     glTranslatef(position.x(), position.y() - 1.3f, position.z());
-    glScalef(1.5f, 1.f, 1.5f); // Scale the cube
+    glScalef(1.5f, 1.f, 1.5f);
     
     // Apply cannon texture if available
     if (hasTexture) {

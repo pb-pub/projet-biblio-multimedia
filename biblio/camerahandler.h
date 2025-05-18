@@ -18,6 +18,8 @@ public:
     
     // Update to return detected points
     std::vector<cv::Point> detectFaces(cv::Mat& frame, cv::Mat& grayFrame, bool thresholdingEnabled);
+
+    
     
 private:
     cv::VideoCapture cap;

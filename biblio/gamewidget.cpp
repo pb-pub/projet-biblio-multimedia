@@ -14,6 +14,9 @@
 #include <QCoreApplication>
 #include <QPainter>
 #include <QDebug>
+#include <QOpenGLWidget> 
+#include <opencv2/imgproc.hpp> 
+#include <QKeyEvent> 
 
 // Constants
 const float MAX_DIMENSION = 33.0f;
@@ -22,8 +25,11 @@ GameWidget::GameWidget(QWidget *parent)
     : QWidget(parent)
     , ui(new Ui::GameWidget)
     , m_fruit(std::vector<Fruit*>())
+    , m_cameraTextureId(0) // Initialize camera texture ID
 {
     ui->setupUi(this);
+    displayCamera = true; // Enable camera display for demonstration
+    setFocusPolicy(Qt::StrongFocus); // Ensure the widget can receive key press events
     
     // Set up a timer for animation updates 
     QTimer* timer = new QTimer(this);
@@ -92,13 +98,20 @@ GameWidget::~GameWidget()
     
     delete ui;
     delete label;
-    delete[] textures;
+    delete[] textures; // Note: This deletes the array, not GL textures. Consider glDeleteTextures for 'textures' array.
     for (auto fruit : m_fruit) {
         delete fruit;
     }
     m_fruit.clear();
     if (cylinder) {
         gluDeleteQuadric(cylinder);
+    }
+
+    if (m_cameraTextureId != 0) {
+        // This should ideally be called when the GL context is current.
+        // For QOpenGLWidget, cleanupGL is the place.
+        // Assuming context is still valid or will be handled.
+        glDeleteTextures(1, &m_cameraTextureId);
     }
 
     delete cameraHandler;
@@ -137,6 +150,17 @@ void GameWidget::initializeGL()
     glClearColor(0.53f, 0.81f, 0.98f, 1.0f);  // Sky blue color
 
     initializeTextures();
+
+    // Initialize camera texture
+    if (m_cameraTextureId == 0) {
+        glGenTextures(1, &m_cameraTextureId);
+        glBindTexture(GL_TEXTURE_2D, m_cameraTextureId);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glBindTexture(GL_TEXTURE_2D, 0); // Unbind
+    }
 }
 
 void GameWidget::initializeTextures() {
@@ -461,6 +485,61 @@ void GameWidget::paintGL()
         
         glPopMatrix();
     }
+
+    // Display camera feed in top-left corner
+    if (displayCamera && cameraInitialized && !currentFrame.empty() && ui->openGLWidget) {
+        glMatrixMode(GL_PROJECTION);
+        glPushMatrix();
+        glLoadIdentity();
+        // Use the QOpenGLWidget's dimensions for ortho projection
+        gluOrtho2D(0, ui->openGLWidget->width(), ui->openGLWidget->height(), 0);
+
+        glMatrixMode(GL_MODELVIEW);
+        glPushMatrix();
+        glLoadIdentity();
+
+        glDisable(GL_LIGHTING);
+        glDisable(GL_DEPTH_TEST);
+        glEnable(GL_TEXTURE_2D);
+
+        cv::Mat displayFrame;
+        // Convert BGR (OpenCV default) to RGBA for OpenGL
+        cv::cvtColor(currentFrame, displayFrame, cv::COLOR_BGR2RGBA);
+
+        glBindTexture(GL_TEXTURE_2D, m_cameraTextureId);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, displayFrame.cols, displayFrame.rows, 0, GL_RGBA, GL_UNSIGNED_BYTE, displayFrame.data);
+
+        float camFeedWidth = ui->openGLWidget->width() / 4.0f;
+        float camFeedHeight = ui->openGLWidget->height() / 4.0f;
+
+        // Preserve aspect ratio of the camera feed
+        float camAspectRatio = (float)displayFrame.cols / (float)displayFrame.rows;
+        if (camAspectRatio > 0) {
+             // Adjust height based on width to maintain aspect ratio
+            camFeedHeight = camFeedWidth / camAspectRatio;
+        }
+
+
+        glColor3f(1.0f, 1.0f, 1.0f); // Ensure texture is not tinted
+
+        glBegin(GL_QUADS);
+        glTexCoord2f(0, 0); glVertex2f(0, 0);                                 // Top-left
+        glTexCoord2f(1, 0); glVertex2f(camFeedWidth, 0);                      // Top-right
+        glTexCoord2f(1, 1); glVertex2f(camFeedWidth, camFeedHeight);          // Bottom-right
+        glTexCoord2f(0, 1); glVertex2f(0, camFeedHeight);                     // Bottom-left
+        glEnd();
+
+        glBindTexture(GL_TEXTURE_2D, 0); // Unbind texture
+
+        // Restore GL state
+        glEnable(GL_DEPTH_TEST); // Re-enable depth testing
+        glEnable(GL_LIGHTING);   // Re-enable lighting (if it was on for 3D scene)
+        
+        glMatrixMode(GL_PROJECTION);
+        glPopMatrix();
+        glMatrixMode(GL_MODELVIEW);
+        glPopMatrix();
+    }
 }
 
 void GameWidget::initializeCamera()
@@ -573,5 +652,18 @@ bool GameWidget::isFruitHit(const cv::Point& point, Fruit* fruit, QTime currentT
     
     // Check if distance is less than combined radii (0.5 for fruit + 0.15 for ball = 0.65)
     return distance < 0.65f && fruitPos.y() > 0.5f; // Only count hits when fruit is above ground
+}
+
+void GameWidget::keyPressEvent(QKeyEvent *event)
+{
+    if (event->key() == Qt::Key_Space) {
+        displayCamera = !displayCamera;
+        if (ui->openGLWidget) {
+            ui->openGLWidget->update(); // Request a repaint to show/hide the camera feed
+        }
+        qDebug() << "Camera display toggled:" << displayCamera;
+    } else {
+        QWidget::keyPressEvent(event); // Call base class implementation for other keys
+    }
 }
 

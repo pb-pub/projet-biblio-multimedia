@@ -56,6 +56,10 @@ private:
     QVector3D projectedPoint;
     bool hasProjectedPoint = false;
     Cannon cannon; // Add the cannon member
+    bool displayCamera = false;
+    GLuint m_cameraTextureId; // Texture ID for camera feed
+
+    void keyPressEvent(QKeyEvent *event);
     
     // Helper method to create fallback colored textures
     QImage createColorTexture(const QColor& color);
