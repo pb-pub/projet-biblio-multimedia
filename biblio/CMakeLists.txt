@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.19)
 project(biblio LANGUAGES CXX)
 
-find_package(Qt6 6.5 REQUIRED COMPONENTS Core Widgets OpenGLWidgets)
+find_package(Qt6 6.5 REQUIRED COMPONENTS Core Widgets OpenGLWidgets Multimedia)
 
 # Add OpenCV
 find_package(OpenCV REQUIRED)
@@ -10,7 +10,7 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 
 set(CMAKE_PREFIX_PATH "$ENV{CMAKE_PREFIX_PATH}")
 
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Multimedia)
 qt_standard_project_setup()
 
 # Set macOS bundle information
@@ -82,6 +82,7 @@ if(APPLE)
             Qt::Core
             Qt::Widgets
             Qt::OpenGLWidgets
+            Qt::Multimedia
             ${OpenCV_LIBS}  # Link OpenCV libraries
             "-framework OpenGL"
             "-framework AGL"
@@ -93,6 +94,7 @@ else()
             Qt::Core
             Qt::Widgets
             Qt::OpenGLWidgets
+            Qt::Multimedia
             ${OpenCV_LIBS}  # Link OpenCV libraries
             GLU
     )

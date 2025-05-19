@@ -11,11 +11,13 @@
 #include <QDir>
 #include <QDebug>
 #include <QTimer>
+#include <QSoundEffect>
 #include "camerahandler.h"
 #include "cannon.h" // Add this include
 
-namespace Ui {
-class GameWidget;
+namespace Ui
+{
+    class GameWidget;
 }
 
 class GameWidget : public QWidget
@@ -25,12 +27,12 @@ class GameWidget : public QWidget
 public:
     explicit GameWidget(QWidget *parent = nullptr);
     ~GameWidget();
-    
+
     void updateFruitDisplay();
 
 signals:
     void scoreIncreased(); // Signal emitted when a fruit is hit
-    void lifeDecrease(); // Signal emitted when a bomb is hit
+    void lifeDecrease();   // Signal emitted when a bomb is hit
 
 public slots:
     // Change these from private to public slots to make them accessible via signal/slot
@@ -43,12 +45,14 @@ public slots:
 
 private:
     Ui::GameWidget *ui;
-    std::vector<Fruit*> m_fruit;
-    GLuint* textures;
-    QFont m_font;   
-    QLabel* label;
-    GLUquadric* cylinder;
-    CameraHandler* cameraHandler;
+    std::vector<Fruit *> m_fruit;
+    GLuint *textures;
+    QFont m_font;
+    QSoundEffect *m_sliceSound;
+    QSoundEffect *m_shootSound;
+    QLabel *label;
+    GLUquadric *cylinder;
+    CameraHandler *cameraHandler;
     QTimer *cameraTimer;
     cv::Mat currentFrame;
     cv::Mat grayFrame;
@@ -60,14 +64,14 @@ private:
     GLuint m_cameraTextureId; // Texture ID for camera feed
 
     void keyPressEvent(QKeyEvent *event);
-    
+
     // Helper method to create fallback colored textures
-    QImage createColorTexture(const QColor& color);
-    Fruit* createFruit();
-    
+    QImage createColorTexture(const QColor &color);
+    Fruit *createFruit();
+
     void initializeCamera();
-    bool isFruitHit(const cv::Point& point, Fruit* fruit, QTime currentTime);
-    void convertCameraPointToGameSpace(const cv::Point& cameraPoint, float& gameX, float& gameZ);
+    bool isFruitHit(const cv::Point &point, Fruit *fruit, QTime currentTime);
+    void convertCameraPointToGameSpace(const cv::Point &cameraPoint, float &gameX, float &gameZ);
 };
 
 #endif // GAMEWIDGET_H

@@ -30,7 +30,7 @@ public:
     bool isBomb();
     void setType(FruitType type);
     void draw(QTime currentTime);
-    QVector3D getPosition(QTime currentTime);
+    QVector3D getPosition(QTime currentTime, float firstPart = 1.f);
     QVector3D getInitialDirection() { return initalSpeed; }
 
     void cut(const QVector3D& cutOriginPoint, const QVector3D& cutNormalVector, QTime currentTime);
@@ -39,11 +39,11 @@ public:
 private :
     FruitType currentFruit;
 
-    void drawApple(QTime currentTime);
-    void drawOrange(QTime currentTime);
-    void drawBanana(QTime currentTime);
-    void drawPear(QTime currentTime);
-    void drawBomb(QTime currentTime);
+    void drawApple(QTime currentTime, float firstPart = 1.f);
+    void drawOrange(QTime currentTime, float firstPart = 1.f);
+    void drawBanana(QTime currentTime, float firstPart = 1.f);
+    void drawPear(QTime currentTime, float firstPart = 1.f);
+    void drawBomb(QTime currentTime, float firstPart = 1.f);
 
     void setTexture(GLuint textureID);
     void setMaterial(const GLfloat* ambient, const GLfloat* diffuse, const GLfloat* specular, const  GLfloat* shininess);
