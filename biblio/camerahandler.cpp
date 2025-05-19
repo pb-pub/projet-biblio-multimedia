@@ -10,7 +10,8 @@ CameraHandler::CameraHandler()
 
 CameraHandler::~CameraHandler()
 {
-    if (cap.isOpened()) {
+    if (cap.isOpened())
+    {
         cap.release();
     }
 }
@@ -18,9 +19,11 @@ CameraHandler::~CameraHandler()
 bool CameraHandler::loadFaceCascade()
 {
     QString cascadePath = "/Users/ismail/projet-biblio-multimedia/biblio/assets/fist.xml";
-    if (!faceCascade.load(cascadePath.toStdString())) {
+    if (!faceCascade.load(cascadePath.toStdString()))
+    {
         cascadePath = "./../../../biblio/assets/fist.xml";
-        if (!faceCascade.load(cascadePath.toStdString())) {
+        if (!faceCascade.load(cascadePath.toStdString()))
+        {
             qDebug() << "Error: Could not load Haar Cascade from" << cascadePath;
             return false;
         }
@@ -32,33 +35,37 @@ int CameraHandler::openCamera()
 {
     // First try - explicitly use AVFOUNDATION backend for macOS
     cap.open(0, cv::CAP_AVFOUNDATION);
-    if (cap.isOpened()) return 1;
-    
-    // Check if camera access was denied (specific to macOS)
-    #ifdef __APPLE__
+    if (cap.isOpened())
+        return 1;
+
+// Check if camera access was denied (specific to macOS)
+#ifdef __APPLE__
     // Log information about the camera access attempt
     qDebug() << "Attempting to access camera with AVFoundation backend";
     cv::VideoCapture testCap(0, cv::CAP_AVFOUNDATION);
-    if (!testCap.isOpened()) {
+    if (!testCap.isOpened())
+    {
         // On macOS, status 0 typically means permission denied
         qDebug() << "Camera access appears to be denied (permission issue)";
         return -1; // Return -1 for permission issues
     }
-    #endif
-    
+#endif
+
     // Second try - default camera with default backend
     cap.open(0);
-    if (cap.isOpened()) return 1;
-    
-    // Third try - try different camera index
+    if (cap.isOpened())
+        return 1;
+
     cap.open("http://192.168.1.80:8000/camera/mjpeg", cv::CAP_FFMPEG);
-    if (cap.isOpened()) return 1;
+    if (cap.isOpened())
+        return 1;
 
     cap.open("http://161.3.37.158:8000/camera/mjpeg", cv::CAP_FFMPEG);
-    if (cap.isOpened()) return 1;
-    
+    if (cap.isOpened())
+        return 1;
+
     qDebug() << "Error: Could not open camera or video source";
-    return 0; // Return 0 for other errors
+    return 0; 
 }
 
 bool CameraHandler::isOpened() const
@@ -66,48 +73,45 @@ bool CameraHandler::isOpened() const
     return cap.isOpened();
 }
 
-bool CameraHandler::getFrame(cv::Mat& frame)
+bool CameraHandler::getFrame(cv::Mat &frame)
 {
-    if (!cap.isOpened()) {
+    if (!cap.isOpened())
+    {
         return false;
     }
-    
+
     cap >> frame;
     return !frame.empty();
 }
 
-std::vector<cv::Point> CameraHandler::detectFaces(cv::Mat& frame, cv::Mat& grayFrame, bool thresholdingEnabled)
+std::vector<cv::Point> CameraHandler::detectFaces(cv::Mat &frame, cv::Mat &grayFrame, bool thresholdingEnabled)
 {
     std::vector<cv::Point> detectedPoints;
-    
-    if (thresholdingEnabled) {
+
+    if (thresholdingEnabled)
+    {
         cv::threshold(grayFrame, grayFrame, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
     }
-    
-    // Detect faces only if cascade was loaded
-    if (!faceCascade.empty()) {
-        std::vector<cv::Rect> faces;
-        faceCascade.detectMultiScale(grayFrame, faces, 1.1, 6, 
-                                    0 | cv::CASCADE_FIND_BIGGEST_OBJECT | cv::CASCADE_SCALE_IMAGE, 
-                                    cv::Size(30, 30), cv::Size(300, 300));
-        
-        // Draw rectangles around detected faces
-        for (const auto &face : faces) {
-            cv::rectangle(frame, face, cv::Scalar(0, 255, 0), 2);
-            
-            // Calculate center of face
-            cv::Point center(face.x + face.width / 2, face.y + face.height / 2);
-            
-            // Add center point to detected points
-            detectedPoints.push_back(center);
-            
-            // Print the center of the face rectangle
-            std::cout << "Face center: (" << center.x << ", " << center.y << ")" << std::endl;
 
-            // Draw a circle at the center of the face
+    if (!faceCascade.empty())
+    {
+        std::vector<cv::Rect> faces;
+        faceCascade.detectMultiScale(grayFrame, faces, 1.1, 6,
+                                     0 | cv::CASCADE_FIND_BIGGEST_OBJECT | cv::CASCADE_SCALE_IMAGE,
+                                     cv::Size(30, 30), cv::Size(300, 300));
+
+        for (const auto &face : faces)
+        {
+            // Draw rectangles around detected faces
+            cv::rectangle(frame, face, cv::Scalar(0, 255, 0), 2);
+
+            // Add center point to detected points
+            cv::Point center(face.x + face.width / 2, face.y + face.height / 2);
+            detectedPoints.push_back(center);
+            std::cout << "Face center: (" << center.x << ", " << center.y << ")" << std::endl;
             cv::circle(frame, center, 5, cv::Scalar(255, 0, 0), -1);
         }
     }
-    
+
     return detectedPoints;
 }

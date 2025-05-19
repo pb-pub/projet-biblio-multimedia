@@ -11,13 +11,11 @@ CameraWidget::CameraWidget(QWidget *parent)
 {
     ui->setupUi(this);
 
-    // Set up the QLabel to display the full image
     ui->label->setMinimumSize(1280, 360);
     ui->label->setScaledContents(true);
     ui->label->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Maximum);
     ui->label->setAlignment(Qt::AlignCenter);
 
-    // Try different methods to open the camera
     int openStatus = cameraHandler.openCamera();
     if (openStatus <= 0) {
         // Show different messages based on the error
@@ -39,7 +37,6 @@ CameraWidget::CameraWidget(QWidget *parent)
                 QDesktopServices::openUrl(QUrl("x-apple.systempreferences:com.apple.preference.security?Privacy_Camera"));
             }
         } else {
-            // No camera found or other error
             QMessageBox::warning(this, "Camera Error", 
                             "Failed to open camera. No camera device was found or it's already in use.");
         }
@@ -57,14 +54,11 @@ CameraWidget::CameraWidget(QWidget *parent)
 
 void CameraWidget::showPlaceholderMessage(const QString &title, const QString &message)
 {
-    // Create a placeholder image with the message
     cv::Mat placeholder(480, 640, CV_8UC3, cv::Scalar(40, 40, 40));
     
-    // Add the title text
     cv::putText(placeholder, title.toStdString(), cv::Point(50, 100), 
                cv::FONT_HERSHEY_SIMPLEX, 0.8, cv::Scalar(255, 255, 255), 2);
     
-    // Add the message text (possibly on multiple lines)
     QStringList lines = message.split('\n');
     for (int i = 0; i < lines.size(); ++i) {
         cv::putText(placeholder, lines[i].toStdString(), cv::Point(50, 150 + i * 30), 
@@ -81,7 +75,6 @@ void CameraWidget::showPlaceholderMessage(const QString &title, const QString &m
             cv::Point(centerX + radius + 20, centerY - radius - 20), 
             cv::Scalar(100, 100, 255), 2);
     
-    // Convert to QImage and display
     cv::cvtColor(placeholder, placeholder, cv::COLOR_BGR2RGB);
     QImage img(placeholder.data, placeholder.cols, placeholder.rows, placeholder.step, QImage::Format_RGB888);
     ui->label->setPixmap(QPixmap::fromImage(img));
@@ -97,9 +90,7 @@ void CameraWidget::updateFrame()
 {
     cv::Mat frame;
     
-    // Check if camera is open
     if (!cameraHandler.isOpened()) {
-        // Try to reopen the camera periodically
         static int reopenCounter = 0;
         if (++reopenCounter >= 90) { // Try every ~3 seconds (90 * 33ms)
             reopenCounter = 0;
@@ -113,7 +104,6 @@ void CameraWidget::updateFrame()
         return;
     }
     
-    // Try to read a frame
     if (!cameraHandler.getFrame(frame)) {
         showPlaceholderMessage("No Frame Received", "Camera is connected but no video stream is available");
         return;
@@ -122,34 +112,26 @@ void CameraWidget::updateFrame()
     // Convert BGR (OpenCV default) to RGB (Qt expects RGB format)
     cv::cvtColor(frame, frame, cv::COLOR_BGR2RGB);
 
-    // Convert to grayscale for face detection
     cv::Mat frameGray = frame.clone();
     cv::cvtColor(frameGray, frameGray, cv::COLOR_RGB2GRAY);
 
-    // Let the camera handler handle face detection
     cameraHandler.detectFaces(frame, frameGray, thresholdingEnabled);
 
-    // Convert the grayscale to color for display
     cv::Mat frame2;
     cv::cvtColor(frameGray, frameGray, cv::COLOR_GRAY2RGB);
     
-    // Create side-by-side display (concatenate horizontally)
     cv::Mat combinedFrame;
     cv::hconcat(frame, frameGray, combinedFrame);
 
     // Convert cv::Mat to QImage
     QImage qimg(combinedFrame.data, combinedFrame.cols, combinedFrame.rows, combinedFrame.step, QImage::Format_RGB888);
 
-    // Get the size of the label
     QSize labelSize = ui->label->size();
     
-    // Create a pixmap from the image
     QPixmap pixmap = QPixmap::fromImage(qimg);
     
-    // Scale to fill the entire label while maintaining aspect ratio
     QPixmap scaledPixmap = pixmap.scaled(labelSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
     
-    // Set the scaled pixmap to the label
     ui->label->setPixmap(scaledPixmap);
 }
 
