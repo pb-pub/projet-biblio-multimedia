@@ -3,7 +3,7 @@
 #include <QImage>
 #include <QDir>
 
-Fruit::Fruit(FruitType type, GLuint *textureids, QTime currentTime, QVector3D initSpeed, QVector3D initPosition) : currentFruit(type), textures(textureids), startTime(currentTime), initalSpeed(initSpeed), initialPosition(initPosition)
+Fruit::Fruit(FruitType type, GLuint *textureids, QTime currentTime, QVector3D initSpeed, QVector3D initPosition) : currentFruit(type), textures(textureids), startTime(currentTime), initalSpeed(initSpeed), initialPosition(initPosition), m_isCut(false)
 {
 
     quadric = gluNewQuadric();
@@ -14,7 +14,7 @@ Fruit::Fruit(FruitType type, GLuint *textureids, QTime currentTime, QVector3D in
 }
 
 
-Fruit::Fruit(FruitType type, GLuint *textureids, QTime currentTime) : currentFruit(type), textures(textureids), startTime(currentTime), initalSpeed(QVector3D(1, 7, -20)), initialPosition(QVector3D(0, 1, 30))
+Fruit::Fruit(FruitType type, GLuint *textureids, QTime currentTime) : currentFruit(type), textures(textureids), startTime(currentTime), initalSpeed(QVector3D(1, 7, -20)), initialPosition(QVector3D(0, 1, 30)), m_isCut(false)
 {
 
     quadric = gluNewQuadric();
@@ -24,7 +24,7 @@ Fruit::Fruit(FruitType type, GLuint *textureids, QTime currentTime) : currentFru
 
 }
 
-Fruit::Fruit(GLuint* textureids, QTime currentTime) : textures(textureids), startTime(currentTime), initialPosition(QVector3D(0, 1, 30))
+Fruit::Fruit(GLuint* textureids, QTime currentTime) : textures(textureids), startTime(currentTime), initialPosition(QVector3D(0, 1, 30)), m_isCut(false)
 {
     std::cout<<"Creating fruit" << std::endl;
     initalSpeed = getRandomInitSpeed();
@@ -65,8 +65,8 @@ Fruit::FruitType Fruit::getRandomFruitType()
 QVector3D Fruit::getRandomInitSpeed()
 {
     // Generate a random speed vector
-    float x = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 3.0f - 1.5f; // Random value between -2 and 2
-    float y = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 1.8f + 4.8f; // Random value between 3 and 7
+    float x = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.4f - 1.2f; // Random value between -2 and 2
+    float y = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 1.4f + 5.f; // Random value between 3 and 7
     float z = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 8.0f - 32.0f; // Random value between -35 and -25
     return QVector3D(x, y, z);
 }
@@ -81,6 +81,16 @@ void Fruit::setType(FruitType type)
 
 void Fruit::draw(QTime currentTime)
 {
+    if (m_isCut) {
+        GLdouble planeEq[4] = {
+            static_cast<GLdouble>(m_clipPlaneEquation.x()),
+            static_cast<GLdouble>(m_clipPlaneEquation.y()),
+            static_cast<GLdouble>(m_clipPlaneEquation.z()),
+            static_cast<GLdouble>(m_clipPlaneEquation.w())
+        };
+        glClipPlane(GL_CLIP_PLANE0, planeEq);
+        glEnable(GL_CLIP_PLANE0);
+    }
 
     switch (currentFruit)
     {
@@ -99,6 +109,10 @@ void Fruit::draw(QTime currentTime)
     case BOMB:
         drawBomb(currentTime);
         break;
+    }
+
+    if (m_isCut) {
+        glDisable(GL_CLIP_PLANE0);
     }
 }
 
@@ -378,58 +392,85 @@ void Fruit::drawBomb(QTime currentTime)
     QVector3D position = getPosition(currentTime);
     glTranslatef(position.x(), position.y(), position.z());
     
-    // Add rotation based on time
     float rotationAngle = startTime.msecsTo(currentTime) / 10.0f; 
     glRotatef(rotationAngle, 0.0f, -1.0f, 0.0f);
-    
-    // Set color to white before texturing the bomb body
     glColor3f(1.0f, 1.0f, 1.0f);
-    // Dessin du corps principal de la bombe (sphère)
+
+
+    // Dessin du corps principal de la bombe 
     setTexture(textures[4]);
-    glPushMatrix(); // Bomb body rotation
-    glRotatef(90.0f, 1.0f, 0.0f, 0.0f); // Rotation pour aligner la texture sur les pôles
+    glPushMatrix();
+    glRotatef(90.0f, 1.0f, 0.0f, 0.0f); 
     gluSphere(quadric, 0.3, 32, 32);
-    glPopMatrix(); // End bomb body rotation
+    glPopMatrix();
     glDisable(GL_TEXTURE_2D);
 
 
-    // Dessin de la mèche (cylindre)
-    // Set material for the fuse (e.g., grey/dark yellow)
+    // Dessin de la mèche
     GLfloat fuseAmbient[] = {0.2f, 0.2f, 0.1f, 1.0f};
     GLfloat fuseDiffuse[] = {0.4f, 0.4f, 0.2f, 1.0f};
     GLfloat fuseSpecular[] = {0.1f, 0.1f, 0.05f, 1.0f};
     GLfloat fuseShininess[] = {5.0f};
     setMaterial(fuseAmbient, fuseDiffuse, fuseSpecular, fuseShininess);
-    glColor3fv(fuseDiffuse); // Set color for fuse
+    glColor3fv(fuseDiffuse); 
+
 
     glPushMatrix();
-    glTranslatef(0.0f, 0.3f, 0.0f); // Positionner la mèche au-dessus de la sphère
-    glRotatef(-90.0f, 1.0f, 0.0f, 0.0f); // Aligner le cylindre verticalement
-    gluCylinder(quadric, 0.02, 0.02, 0.2, 16, 16); // Cylindre pour la mèche
+    glTranslatef(0.0f, 0.3f, 0.0f); 
+    glRotatef(-90.0f, 1.0f, 0.0f, 0.0f); 
+    gluCylinder(quadric, 0.02, 0.02, 0.2, 16, 16); 
     glPopMatrix();
 
-    // Reset color to white so it doesn't affect other objects
+    // Reset color 
     glColor3f(1.0f, 1.0f, 1.0f);
-    // Désactiver la texture (already disabled after bomb body)
-    // glDisable(GL_TEXTURE_2D); // This was here, but texture is already disabled.
     glPopMatrix();
 }
 
 QVector3D Fruit::getPosition(QTime currentTime)
 {
     // Calculate the position of the fruit based on its trajectory
-    
+    float slowdownFactor = 1.5f; 
     float deltaT = startTime.msecsTo(currentTime) / 1000.0f;
+    deltaT /= slowdownFactor; // Slow down the fruit's fall speed
+
+
     float x = initalSpeed.x() * deltaT + initialPosition.x();
     float y = initalSpeed.y() * deltaT + initialPosition.y() - (0.5f * 9.81f * deltaT * deltaT);
     float z = initalSpeed.z() * deltaT + initialPosition.z();
 
-    //std::cout << "Position: " << x << ", " << y << ", " << z << std::endl;
+    QVector3D position = QVector3D(x, y, z);
 
+    if (m_isCut) {
+        float deltaTcut = cutTime.msecsTo(currentTime) / 1000.0f;
+        deltaTcut /= slowdownFactor; 
+        x += normal.x() * deltaTcut;
+        y += normal.y() * deltaTcut;
+        z += normal.z() * deltaTcut; 
+    }
+
+    // std::cout << "Position: " << x << ", " << y << ", " << z << std::endl;
     return QVector3D(x, y, z);
 }
 
 bool Fruit::isBomb()
 {
     return currentFruit == BOMB;
+}
+
+void Fruit::cut(const QVector3D& cutOriginPoint, const QVector3D& cutNormalVector, const QTime currentTime)
+{
+    if (m_isCut) return; 
+    m_isCut = true;
+    cutTime = currentTime;
+    normal = cutNormalVector.normalized();
+    // Plane equation: Ax + By + Cz + D = 0
+    // D = - (A*Px + B*Py + C*Pz) = -dot(normal, pointOnPlane)
+    float d = -QVector3D::dotProduct(normal, cutOriginPoint);
+    m_clipPlaneEquation = QVector4D(normal.x(), normal.y(), normal.z(), d);
+    std::cout << "Fruit cut. Plane: " << normal.x() << "x + " << normal.y() << "y + " << normal.z() << "z + " << d << " = 0" << std::endl;
+}
+
+bool Fruit::isCut() const
+{
+    return m_isCut;
 }

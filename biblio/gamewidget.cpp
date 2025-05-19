@@ -366,7 +366,7 @@ void GameWidget::paintGL()
     glLoadIdentity();
     
     // Set camera position with better positioning for perspective view
-    gluLookAt(0.0f, 1.8f, -1.0f,   // Eye position
+    gluLookAt(0.0f, 1.8f, -1.f,   // Eye position
     // gluLookAt(2.0f, 1.8f, 20.f,        // testing eye position
               0.0f, 1.0f, 25.0f,     // Look at position (center)
               0.0f, 1.0f, 0.0f);    // Up vector
@@ -583,11 +583,23 @@ void GameWidget::updateFrame()
         
         
         for (const auto& point : detectedPoints) {
-            std::vector<Fruit*> fruitsToRemove;
-            
+
             for (auto fruit : m_fruit) {
-                if (isFruitHit(point, fruit, currentTime)) {
-                    fruitsToRemove.push_back(fruit);
+                if (!fruit->isCut() && isFruitHit(point, fruit, currentTime)) { // Only interact if not already cut
+                    // Cut the fruit instead of removing it
+                    QVector3D fruitCenter = fruit->getPosition(currentTime);
+                    
+                    // Generate a somewhat random cut normal
+                    float nx = (rand() % 200 - 100) / 100.0f;
+                    float ny = (rand() % 200 - 100) / 100.0f;
+                    float nz = (rand() % 200 - 100) / 100.0f;
+                    QVector3D cutNormal(nx, ny, nz);
+                    if (cutNormal.lengthSquared() < 0.01f) { // Avoid zero vector
+                        cutNormal = QVector3D(1.0f, 0.0f, 0.0f);
+                    }
+                    cutNormal.normalize();
+
+                    fruit->cut(fruitCenter, cutNormal, currentTime);
 
                     if (fruit->isBomb()) {
                         // Emit signal for game over
@@ -596,15 +608,8 @@ void GameWidget::updateFrame()
                         // Emit signal to increase score
                         emit scoreIncreased();
                     }
+                    // Do not create a new fruit here, it will be created when one goes off screen.
                 }
-            }
-            
-            // Remove hit fruits and add new ones
-            for (auto fruitToRemove : fruitsToRemove) {
-                m_fruit.erase(std::remove(m_fruit.begin(), m_fruit.end(), fruitToRemove), m_fruit.end());
-                delete fruitToRemove;
-                // Use the new createFruit function instead of direct creation
-                createFruit();
             }
         }
         
