@@ -54,10 +54,10 @@ if(APPLE)
     file(GLOB TEXTURE_FILES 
          "${CMAKE_CURRENT_SOURCE_DIR}/assets/textures/*.jpg"
          "${CMAKE_CURRENT_SOURCE_DIR}/assets/textures/*.png"
+         "${CMAKE_CURRENT_SOURCE_DIR}/assets/sounds/*.wav"
     )
     file(GLOB FONT_FILES 
          "${CMAKE_CURRENT_SOURCE_DIR}/assets/*.otf"
-         "${CMAKE_CURRENT_SOURCE_DIR}/assets/*.ttf"
     )
     
     target_sources(biblio PRIVATE
