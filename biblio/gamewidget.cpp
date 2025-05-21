@@ -196,7 +196,6 @@ void GameWidget::initializeTextures()
 
     // Try multiple possible texture locations
     QStringList possibleBasePaths = {
-        // Relative to executable
         appDir.absolutePath() + "/../../../biblio/assets/textures/",
         // Relative to current directory
         "./assets/textures/",
@@ -204,7 +203,7 @@ void GameWidget::initializeTextures()
         "../assets/textures/",
         "../../assets/textures/",
         "../../../assets/textures/",
-        // Absolute path for debugging
+        // Absolute path 
         "/Users/ismail/projet-biblio-multimedia/biblio/assets/textures/"};
 
     QString base_path;
@@ -214,7 +213,7 @@ void GameWidget::initializeTextures()
     for (const auto &path : possibleBasePaths)
     {
         QDir dir(path);
-        if (dir.exists("apple.jpg") || dir.exists("orange.jpg"))
+        if (dir.exists("apple.jpg") || dir.exists("strawberry.jpg"))
         {
             base_path = path;
             foundPath = true;
@@ -234,7 +233,7 @@ void GameWidget::initializeTextures()
 
     // Load images
     QImage appleImage(base_path + "apple.jpg");
-    QImage orangeImage(base_path + "orange.jpg");
+    QImage strawberryImage(base_path + "strawberry.jpg");
     QImage bananaImage(base_path + "banana.jpg");
     QImage pearImage(base_path + "pear.jpg");
     QImage bombImage(base_path + "bomb.jpg");
@@ -247,14 +246,14 @@ void GameWidget::initializeTextures()
         qWarning() << "Failed to load apple.jpg, trying backup red.jpg";
         appleImage = QImage(base_path + "red.jpg");
     }
-    if (orangeImage.isNull())
+    if (strawberryImage.isNull())
     {
         qWarning() << "Failed to load orange.jpg, trying backup orange_alt.jpg";
-        orangeImage = QImage(base_path + "orange_alt.jpg");
+        strawberryImage = QImage(base_path + "orange_alt.jpg");
     }
 
     appleImage = appleImage.convertToFormat(QImage::Format_RGBA8888);
-    orangeImage = orangeImage.convertToFormat(QImage::Format_RGBA8888);
+    strawberryImage = strawberryImage.convertToFormat(QImage::Format_RGBA8888);
     bananaImage = bananaImage.convertToFormat(QImage::Format_RGBA8888);
     pearImage = pearImage.convertToFormat(QImage::Format_RGBA8888);
     bombImage = bombImage.convertToFormat(QImage::Format_RGBA8888);
@@ -262,7 +261,7 @@ void GameWidget::initializeTextures()
     cannonImage = cannonImage.convertToFormat(QImage::Format_RGBA8888); // Convert cannon image
 
     // check if images are loaded correctly
-    if (appleImage.isNull() || orangeImage.isNull() || bananaImage.isNull() ||
+    if (appleImage.isNull() || strawberryImage.isNull() || bananaImage.isNull() ||
         pearImage.isNull() || bombImage.isNull() || floorImage.isNull() ||
         cannonImage.isNull())
     {
@@ -270,7 +269,7 @@ void GameWidget::initializeTextures()
 
         // Create fallback colored textures
         appleImage = createColorTexture(QColor(255, 0, 0));      // Red for apple
-        orangeImage = createColorTexture(QColor(255, 165, 0));   // Orange
+        strawberryImage = createColorTexture(QColor(255, 165, 0));   // Orange
         bananaImage = createColorTexture(QColor(255, 255, 0));   // Yellow for banana
         pearImage = createColorTexture(QColor(0, 255, 0));       // Green for pear
         bombImage = createColorTexture(QColor(50, 50, 50));      // Dark gray for bomb
@@ -284,9 +283,9 @@ void GameWidget::initializeTextures()
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-    // Orange Texture
+    // Strawberry Texture
     glBindTexture(GL_TEXTURE_2D, textures[1]);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, orangeImage.width(), orangeImage.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, orangeImage.bits());
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, strawberryImage.width(), strawberryImage.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, strawberryImage.bits());
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
@@ -406,7 +405,6 @@ void GameWidget::paintGL()
               0.0f, 1.0f, 25.0f, // Look at position (center)
               0.0f, 1.0f, 0.0f); // Up vector
 
-    // Réinitialiser la position de la lumière après le changement de vue
     GLfloat light_position[] = {5.0f, 5.0f, 5.0f, 1.0f};
     glLightfv(GL_LIGHT0, GL_POSITION, light_position);
 
@@ -426,9 +424,9 @@ void GameWidget::paintGL()
     glPushMatrix();
 
     // Set material properties for the floor - adjust for texture
-    GLfloat floor_ambient[] = {0.7f, 0.7f, 0.7f, 1.0f};  // Brighter to show texture better
-    GLfloat floor_diffuse[] = {1.0f, 1.0f, 1.0f, 1.0f};  // Full diffuse to show texture
-    GLfloat floor_specular[] = {0.2f, 0.2f, 0.2f, 1.0f}; // Light specular
+    GLfloat floor_ambient[] = {0.7f, 0.7f, 0.7f, 1.0f}; 
+    GLfloat floor_diffuse[] = {1.0f, 1.0f, 1.0f, 1.0f};  
+    GLfloat floor_specular[] = {0.2f, 0.2f, 0.2f, 1.0f};
     glMaterialfv(GL_FRONT, GL_AMBIENT, floor_ambient);
     glMaterialfv(GL_FRONT, GL_DIFFUSE, floor_diffuse);
     glMaterialfv(GL_FRONT, GL_SPECULAR, floor_specular);
@@ -441,11 +439,11 @@ void GameWidget::paintGL()
 
     // Draw the main ground plane with texture
     glBegin(GL_QUADS);
-    glNormal3f(0.0f, 1.0f, 0.0f); // Normal pointing up
+    glNormal3f(0.0f, 1.0f, 0.0f); 
 
-    const float textureRepetition = 20.0f; // Higher number = more repetition, less stretching
+    const float textureRepetition = 20.0f; 
 
-    // Add texture coordinates to the ground quad with more repetition
+    // Add texture coordinates to the ground quad 
     glTexCoord2f(0.0f, 0.0f);
     glVertex3f(-MAX_DIMENSION, 0.0f, -MAX_DIMENSION);
     glTexCoord2f(textureRepetition, 0.0f);
@@ -492,6 +490,10 @@ void GameWidget::paintGL()
         // if the fruit y coordinate is less than 0, remove it
         if (fruit->getPosition(QTime::currentTime()).y() < 0)
         {
+            if (!fruit->isCut() && !fruit->isBomb())
+            {
+                emit lifeDecrease();
+            }
             delete fruit;
             m_fruit.erase(std::remove(m_fruit.begin(), m_fruit.end(), fruit), m_fruit.end());
 

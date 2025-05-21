@@ -46,7 +46,7 @@ Fruit::FruitType Fruit::getRandomFruitType()
     case 0:
         return APPLE;
     case 1:
-        return ORANGE;
+        return STRAWBERRY;
     case 2:
         return BANANA;
     case 3:
@@ -90,8 +90,8 @@ void Fruit::draw(QTime currentTime)
     case APPLE:
         drawApple(currentTime);
         break;
-    case ORANGE:
-        drawOrange(currentTime);
+    case STRAWBERRY:
+        drawStrawberry(currentTime);
         break;
     case BANANA:
         drawBanana(currentTime);
@@ -119,8 +119,8 @@ void Fruit::draw(QTime currentTime)
         case APPLE:
             drawApple(currentTime, -1.f);
             break;
-        case ORANGE:
-            drawOrange(currentTime, -1.f);
+        case STRAWBERRY:
+            drawStrawberry(currentTime, -1.f);
             break;
         case BANANA:
             drawBanana(currentTime, -1.f);
@@ -173,7 +173,6 @@ void Fruit::drawApple(QTime currentTime, float firstPart)
     glDisable(GL_TEXTURE_2D);
 
     // Dessin de la tige (stem)
-    // Set material for the stem (e.g., brown)
     GLfloat stemAmbient[] = {0.4f, 0.2f, 0.0f, 1.0f};
     GLfloat stemDiffuse[] = {0.5f, 0.25f, 0.0f, 1.0f};
     GLfloat stemSpecular[] = {0.1f, 0.05f, 0.0f, 1.0f};
@@ -188,7 +187,6 @@ void Fruit::drawApple(QTime currentTime, float firstPart)
     glPopMatrix();
 
     // Dessin du calice (bottom part)
-    // Set material for the calyx (e.g., dark green/brown)
     GLfloat calyxAmbient[] = {0.1f, 0.1f, 0.0f, 1.0f};
     GLfloat calyxDiffuse[] = {0.2f, 0.2f, 0.0f, 1.0f};
     GLfloat calyxSpecular[] = {0.05f, 0.05f, 0.0f, 1.0f};
@@ -207,59 +205,82 @@ void Fruit::drawApple(QTime currentTime, float firstPart)
     glPopMatrix(); // Main apple matrix
 }
 
-void Fruit::drawOrange(QTime currentTime, float firstPart)
+void Fruit::drawStrawberry(QTime currentTime, float firstPart)
 {
-    // Positionnement de l'orange
-    glPushMatrix(); // Main orange transform
+    glPushMatrix();
     QVector3D position = getPosition(currentTime, firstPart);
     glTranslatef(position.x(), position.y(), position.z());
 
-    // Add rotation based on time
     float rotationAngle = startTime.msecsTo(currentTime) / 18.0f;
     glRotatef(rotationAngle, 0.2f, 1.0f, 0.0f);
 
-    // Set color to white before texturing the main body
     glColor3f(1.0f, 1.0f, 1.0f);
-    // Dessin de l'orange (avec la texture)
     setTexture(textures[1]);
-    glPushMatrix();                     // Orange body rotation
-    glRotatef(90.0f, 1.0f, 0.0f, 0.0f); // Rotation pour aligner la texture sur les pôles
-    gluSphere(quadric, 0.3, 32, 32);    // Main orange body
-    glPopMatrix();                      // End orange body rotation
-    glDisable(GL_TEXTURE_2D);
 
-    // Dessin du "nombril" (calice/navel) de l'orange
-    GLfloat navelAmbient[] = {0.3f, 0.15f, 0.0f, 1.0f}; // Darker orange/brown
-    GLfloat navelDiffuse[] = {0.4f, 0.2f, 0.05f, 1.0f};
-    GLfloat navelSpecular[] = {0.1f, 0.05f, 0.0f, 1.0f};
-    GLfloat navelShininess[] = {5.0f};
-    setMaterial(navelAmbient, navelDiffuse, navelSpecular, navelShininess);
-    glColor3fv(navelDiffuse);
+    // Strawberry Body
+    const int numSegments = 12; // Number of segments around the strawberry
+    const int numSlices = 4;
+    float profile[][2] = {
+        {-0.25f, 0.0f}, // Bottom tip
+        {-0.1f, 0.25f}, // Middle widest part
+        {0.15f, 0.2f},  // Tapering towards top
+        {0.2f, 0.0f}    // Top tip
+    };
 
-    glPushMatrix();
-    glTranslatef(0.0f, -0.29f, 0.0f); // Position at the bottom of the orange
-    gluSphere(quadric, 0.04, 16, 16); // Small sphere for the navel
-    glPopMatrix();
+    glBegin(GL_TRIANGLES);
+    // Iterate through slices
+    for (int j = 0; j < numSlices - 1; ++j)
+    { 
+        float y1 = profile[j][0];
+        float r1 = profile[j][1];
+        float y2 = profile[j + 1][0];
+        float r2 = profile[j + 1][1];
 
-    // Dessin d'une petite indication de tige/feuille verte
-    GLfloat stemLeafAmbient[] = {0.0f, 0.2f, 0.0f, 1.0f}; // Greenish
-    GLfloat stemLeafDiffuse[] = {0.0f, 0.3f, 0.0f, 1.0f};
-    GLfloat stemLeafSpecular[] = {0.0f, 0.1f, 0.0f, 1.0f};
-    GLfloat stemLeafShininess[] = {10.0f};
-    setMaterial(stemLeafAmbient, stemLeafDiffuse, stemLeafSpecular, stemLeafShininess);
-    glColor3fv(stemLeafDiffuse);
+        // Texture coordinates V (vertical)
+        float v1_tex = static_cast<float>(j) / (numSlices - 1);
+        float v2_tex = static_cast<float>(j + 1) / (numSlices - 1);
 
-    glPushMatrix();
-    glTranslatef(0.0f, 0.3f, 0.0f); // Position at the top
-    // Optional: make it a very short, wide cylinder or a tiny sphere
-    // gluCylinder(quadric, 0.03, 0.02, 0.05, 12, 1);
-    gluSphere(quadric, 0.03, 12, 12); // Tiny sphere for stem/leaf spot
-    glPopMatrix();
+        // Iterate around the circumference
+        for (int i = 0; i < numSegments; ++i)
+        {
+            float angle1 = (2.0f * M_PI * i) / numSegments;
+            float angle2 = (2.0f * M_PI * (i + 1)) / numSegments;
 
-    // Reset color to white so it doesn't affect other objects
+            // Texture coordinates U (horizontal)
+            float u1_tex = static_cast<float>(i) / numSegments;
+            float u2_tex = static_cast<float>(i + 1) / numSegments;
+
+            // Vertices for the current quad
+            QVector3D p1(r1 * cos(angle1), y1, r1 * sin(angle1));
+            QVector3D p2(r1 * cos(angle2), y1, r1 * sin(angle2));
+            QVector3D p3(r2 * cos(angle2), y2, r2 * sin(angle2));
+            QVector3D p4(r2 * cos(angle1), y2, r2 * sin(angle1));
+
+            // Triangle 1
+            glTexCoord2f(u1_tex, v1_tex);
+            glVertex3f(p1.x(), p1.y(), p1.z());
+            glTexCoord2f(u2_tex, v1_tex);
+            glVertex3f(p2.x(), p2.y(), p2.z());
+            glTexCoord2f(u2_tex, v2_tex);
+            glVertex3f(p3.x(), p3.y(), p3.z());
+
+            // Triangle 2
+            glTexCoord2f(u1_tex, v1_tex);
+            glVertex3f(p1.x(), p1.y(), p1.z());
+            glTexCoord2f(u2_tex, v2_tex);
+            glVertex3f(p3.x(), p3.y(), p3.z());
+            glTexCoord2f(u1_tex, v2_tex);
+            glVertex3f(p4.x(), p4.y(), p4.z());
+        }
+    }
+    glEnd();
+
+    glDisable(GL_TEXTURE_2D); // Disable texturing after drawing strawberry body
+
+    // Reset color to white
     glColor3f(1.0f, 1.0f, 1.0f);
 
-    glPopMatrix(); // End main orange transform
+    glPopMatrix(); // End main strawberry transform
 }
 
 void Fruit::drawBanana(QTime currentTime, float firstPart)
@@ -484,7 +505,7 @@ void Fruit::cut(const QVector3D &cutOriginPoint, const QVector3D &cutNormalVecto
     m_isCut = true;
     cutTime = currentTime;
     normal = cutNormalVector.normalized();
-    // Plane equation: Ax + By + Cz + D = 0
+    // Plane equation: Ax + By + Cz + D = 0f
     // D = - (A*Px + B*Py + C*Pz) = -dot(normal, pointOnPlane)
     float d = -QVector3D::dotProduct(normal, cutOriginPoint);
     m_clipPlaneEquation = QVector4D(normal.x(), normal.y(), normal.z(), d);

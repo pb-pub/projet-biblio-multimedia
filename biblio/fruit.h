@@ -16,7 +16,7 @@ class Fruit {
 public:
     enum FruitType {
         APPLE,
-        ORANGE,
+        STRAWBERRY,
         BANANA,
         PEAR,
         BOMB
@@ -40,7 +40,7 @@ private :
     FruitType currentFruit;
 
     void drawApple(QTime currentTime, float firstPart = 1.f);
-    void drawOrange(QTime currentTime, float firstPart = 1.f);
+    void drawStrawberry(QTime currentTime, float firstPart = 1.f);
     void drawBanana(QTime currentTime, float firstPart = 1.f);
     void drawPear(QTime currentTime, float firstPart = 1.f);
     void drawBomb(QTime currentTime, float firstPart = 1.f);
