@@ -21,7 +21,6 @@ public:
 private:
     int lives = 3;
     int score = 0;
-    CameraWidget* cameraWidget;
     GameWidget* gameWidget;
     Ui::GameWindow *ui;
 

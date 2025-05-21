@@ -44,17 +44,17 @@ GameOverDialog::GameOverDialog(int score, QWidget *parent)
 
 GameOverDialog::~GameOverDialog()
 {
-    // Child widgets are automatically deleted by Qt
 }
 
 void GameOverDialog::onNewGameClicked()
 {
-    accept(); // Close the dialog
+    accept(); 
     GameWindow *gameWindow = new GameWindow();
     gameWindow->show();
 }
 
 void GameOverDialog::onExitClicked()
 {
-    QApplication::quit(); // Terminate the application
+    QApplication::quit();
+
 }

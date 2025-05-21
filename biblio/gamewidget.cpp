@@ -127,9 +127,6 @@ GameWidget::~GameWidget()
 
     if (m_cameraTextureId != 0)
     {
-        // This should ideally be called when the GL context is current.
-        // For QOpenGLWidget, cleanupGL is the place.
-        // Assuming context is still valid or will be handled.
         glDeleteTextures(1, &m_cameraTextureId);
     }
 

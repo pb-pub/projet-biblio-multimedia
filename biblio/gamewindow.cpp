@@ -1,7 +1,7 @@
 #include "gamewindow.h"
 #include "ui_gamewindow.h"
 #include "mainwindow.h"
-#include "gameoverdialog.h" // Added include for GameOverDialog
+#include "gameoverdialog.h" 
 
 
 #include <QVBoxLayout>
@@ -38,27 +38,22 @@ GameWindow::GameWindow(QWidget *parent)
         // Check if game over
         if (lives <= 0) {
             // Handle game over
-            int finalScore = score; // Capture score before closing
-            this->close(); // Close the current game window
+            int finalScore = score; 
+            gameWidget->close(); 
+            this->close(); 
 
-            GameOverDialog gameOverDialog(finalScore, nullptr); // Pass the score
-            gameOverDialog.exec(); // Show the dialog modally
-            // Execution will resume here after the dialog is closed.
-            // If "New Game" was clicked, a new GameWindow is already shown.
-            // If "Exit" was clicked, the application is quitting.
+            GameOverDialog gameOverDialog(finalScore, nullptr);
+            gameOverDialog.exec(); 
         }
     });
 
-    // Assurer que le label est visible au-dessus du GameWidget
     if (ui->label) {
-        // Configurer le label pour qu'il soit au premier plan
         ui->label->raise();
         
-        // Appliquer un style pour améliorer la visibilité
         ui->label->setStyleSheet(
             "QLabel { "
             "   color: white; "
-            "   background-color: rgba(0, 0, 0, 150); " // Fond semi-transparent
+            "   background-color: rgba(0, 0, 0, 150); " 
             "   border-radius: 10px; "
             "   padding: 5px; "
             "   font-size: 14pt; "
@@ -70,9 +65,6 @@ GameWindow::GameWindow(QWidget *parent)
         ui->label->setParent(this);
         ui->label->setAttribute(Qt::WA_TransparentForMouseEvents);
         ui->label->show();
-        
-        
-        // Repositionner le label sur le dessus si nécessaire
         QTimer::singleShot(100, [this]() {
             ui->label->raise();
             updateLabelDisplay();
@@ -83,7 +75,7 @@ GameWindow::GameWindow(QWidget *parent)
 GameWindow::~GameWindow()
 {
     delete ui;
-    delete gameWidget; // Clean up the game widget
+    delete gameWidget;
 }
 
 void GameWindow::updateLabelDisplay()
