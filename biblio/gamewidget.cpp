@@ -24,7 +24,13 @@
 const float MAX_DIMENSION = 33.0f;
 
 GameWidget::GameWidget(QWidget *parent)
-    : QWidget(parent), ui(new Ui::GameWidget), m_fruit(std::vector<Fruit *>()), m_cameraTextureId(0) // Initialize camera texture ID
+    : QWidget(parent), ui(ne        // Rotation pour positionner le katana à l'endroit
+        glRotatef(-90.0f, 0.0f, 1.0f, 0.0f);  // Tourner le katana autour de l'axe Y
+        
+        // Dessiner un katana japonais authentique
+        // Réorienter pour aligner correctement le katana dans l'espace 
+        glRotatef(-10.0f, 1.0f, 0.0f, 0.0f);  // Très légère inclinaison vers l'avant
+        glRotatef(-5.0f, 0.0f, 0.0f, 1.0f);   // Très légère inclinaison sur le côtéameWidget), m_fruit(std::vector<Fruit *>()), m_cameraTextureId(0) // Initialize camera texture ID
       ,
       m_sliceSound(new QSoundEffect(this)) // Initialize sound effect
       ,
@@ -37,7 +43,7 @@ GameWidget::GameWidget(QWidget *parent)
     // Set up a timer for animation updates
     QTimer *timer = new QTimer(this);
     connect(timer, &QTimer::timeout, this, &GameWidget::updateFruitDisplay);
-    timer->start(50); // ~60 FPS
+    timer->start(16); // ~60 FPS (16ms entre les frames)
 
     if (ui->openGLWidget)
     {
@@ -503,27 +509,742 @@ void GameWidget::paintGL()
         }
     }
 
-    // Draw a small ball at the projected point if it exists
+    // Draw a ninja blade at the projected point if it exists
     if (hasProjectedPoint)
     {
         glPushMatrix();
 
-        // Set material for the ball (bright red)
-        GLfloat ball_ambient[] = {0.5f, 0.0f, 0.0f, 1.0f};
-        GLfloat ball_diffuse[] = {1.0f, 0.0f, 0.0f, 1.0f};
-        GLfloat ball_specular[] = {1.0f, 0.5f, 0.5f, 1.0f};
-        glMaterialfv(GL_FRONT, GL_AMBIENT, ball_ambient);
-        glMaterialfv(GL_FRONT, GL_DIFFUSE, ball_diffuse);
-        glMaterialfv(GL_FRONT, GL_SPECULAR, ball_specular);
-        glMaterialf(GL_FRONT, GL_SHININESS, 50.0f);
+        // Set initial material properties
+        GLfloat initial_ambient[] = {0.3f, 0.3f, 0.3f, 1.0f};
+        GLfloat initial_diffuse[] = {0.8f, 0.8f, 0.8f, 1.0f};
+        GLfloat initial_specular[] = {1.0f, 1.0f, 1.0f, 1.0f};
+        glMaterialfv(GL_FRONT, GL_AMBIENT, initial_ambient);
+        glMaterialfv(GL_FRONT, GL_DIFFUSE, initial_diffuse);
+        glMaterialfv(GL_FRONT, GL_SPECULAR, initial_specular);
+        glMaterialf(GL_FRONT, GL_SHININESS, 100.0f);
 
         // Move to the projected point
         glTranslatef(projectedPoint.x(), projectedPoint.y(), projectedPoint.z());
-
-        GLUquadric *ball = gluNewQuadric();
-        gluQuadricDrawStyle(ball, GLU_FILL);
-        gluSphere(ball, 0.05f, 16, 16);
-        gluDeleteQuadric(ball);
+        
+        // Rotation pour positionner le katana à l'endroit
+        glRotatef(-90.0f, 0.0f, 1.0f, 0.0f);  // Tourner le katana autour de l'axe Y
+        
+        // Dessiner un katana japonais authentique
+        // Réorienter pour aligner correctement le katana dans l'espace 
+        glRotatef(-10.0f, 1.0f, 0.0f, 0.0f);  // Incliner très légèrement le katana vers l'avant
+        glRotatef(-5.0f, 0.0f, 0.0f, 1.0f);   // Incliner très légèrement sur le côté
+        
+        // Poignée (tsuka) - Texture noire et rouge pour le Bankai de Ichigo
+        // Activer les textures
+        glEnable(GL_TEXTURE_2D);
+        
+        // Créer une texture pour la poignée rouge et noire
+        static GLuint handleTexture = 0;
+        if (handleTexture == 0) {
+            // Créer la texture si elle n'existe pas
+            glGenTextures(1, &handleTexture);
+            glBindTexture(GL_TEXTURE_2D, handleTexture);
+            
+            // Générer une texture pour la poignée de Tensa Zangetsu
+            // Le tissu est noir avec des détails de rouge sombre
+            const int TEX_SIZE = 128; // Texture plus grande pour plus de détails
+            unsigned char texData[TEX_SIZE * TEX_SIZE * 4];
+            for (int y = 0; y < TEX_SIZE; y++) {
+                for (int x = 0; x < TEX_SIZE; x++) {
+                    int idx = (y * TEX_SIZE + x) * 4;
+                    
+                    // Par défaut: noir profond (caractéristique du Tensa Zangetsu)
+                    int r = 10;
+                    int g = 6;
+                    int b = 6;
+                    
+                    // Motif de tissu tressé - simulation du tressage de la poignée
+                    int patternX = x % 16;
+                    int patternY = y % 16;
+                    bool isInCross = (patternX > 6 && patternX < 10) || (patternY > 6 && patternY < 10);
+                    
+                    if (isInCross) {
+                        r = 25; // Rouge plus sombre
+                        g = 3;
+                        b = 3;
+                    }
+                    
+                    // Ajouter un peu de variation pour le réalisme
+                    int noise = ((x*7 + y*9) % 13);
+                    if (noise > 10) {
+                        r += 5;
+                    }
+                    
+                    // Simuler la texture du tissu serré
+                    if ((x + y/2) % 4 == 0) {
+                        r -= 2;
+                        g -= 1;
+                        b -= 1;
+                    }
+                    
+                    texData[idx] = r;      // R
+                    texData[idx + 1] = g;  // G
+                    texData[idx + 2] = b;  // B
+                    texData[idx + 3] = 255; // A
+                }
+            }
+            
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, TEX_SIZE, TEX_SIZE, 0, GL_RGBA, 
+                         GL_UNSIGNED_BYTE, texData);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+            
+            // Génération des mipmaps pour améliorer la qualité visuelle
+            glGenerateMipmap(GL_TEXTURE_2D);
+        } else {
+            glBindTexture(GL_TEXTURE_2D, handleTexture);
+        }
+        
+        // Configurer les matériaux pour améliorer le rendu de la texture
+        GLfloat handle_ambient[] = {0.4f, 0.1f, 0.1f, 1.0f};  // Base rouge foncé avec ambient suffisant
+        GLfloat handle_diffuse[] = {0.7f, 0.15f, 0.15f, 1.0f}; // Rouge plus intense pour Tensa Zangetsu
+        GLfloat handle_specular[] = {0.3f, 0.3f, 0.3f, 1.0f}; // Léger éclat métallique
+        glMaterialfv(GL_FRONT, GL_AMBIENT, handle_ambient);
+        glMaterialfv(GL_FRONT, GL_DIFFUSE, handle_diffuse);
+        glMaterialfv(GL_FRONT, GL_SPECULAR, handle_specular);
+        glMaterialf(GL_FRONT, GL_SHININESS, 15.0f);  // Semi-brillant pour le tissu tressé
+        
+        // Mode de texture modulé avec le matériau
+        glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+        
+        GLUquadric *handle = gluNewQuadric();
+        gluQuadricDrawStyle(handle, GLU_FILL);
+        gluQuadricNormals(handle, GLU_SMOOTH);
+        gluQuadricTexture(handle, GL_TRUE);  // Activer les coordonnées de texture
+        
+        // Augmenter les segments pour un meilleur mappage de texture
+        // Paramètres: base, top, height, slices, stacks (plus de slices/stacks = plus de détails)
+        gluCylinder(handle, 0.025f, 0.023f, 0.28f, 16, 6);  // Poignée plus détaillée
+        
+        // Désactiver les textures après avoir fini avec la poignée
+        glDisable(GL_TEXTURE_2D);
+        
+        // Pommeau (kashira) - bout de la poignée du Bankai
+        glPushMatrix();
+        GLfloat kashira_diffuse[] = {0.05f, 0.05f, 0.05f, 1.0f};  // Noir
+        glMaterialfv(GL_FRONT, GL_DIFFUSE, kashira_diffuse);
+        glTranslatef(0.0f, 0.0f, -0.01f);  // Légèrement en retrait
+        gluDisk(handle, 0.0f, 0.025f, 12, 2);  // Base du pommeau
+        gluCylinder(handle, 0.025f, 0.025f, 0.01f, 12, 1);  // Côté du pommeau
+        
+        // Anneau pour attacher la chaîne
+        GLfloat ring_diffuse[] = {0.2f, 0.2f, 0.2f, 1.0f};   // Gris métal foncé
+        GLfloat ring_specular[] = {0.5f, 0.5f, 0.5f, 1.0f};  // Reflet métallique
+        glMaterialfv(GL_FRONT, GL_DIFFUSE, ring_diffuse);
+        glMaterialfv(GL_FRONT, GL_SPECULAR, ring_specular);
+        glMaterialf(GL_FRONT, GL_SHININESS, 40.0f);
+        glTranslatef(0.0f, 0.02f, -0.01f);  // Déplacer sur le côté de la poignée
+        
+        GLUquadric* ring = gluNewQuadric();
+        gluQuadricDrawStyle(ring, GLU_FILL);
+        gluQuadricNormals(ring, GLU_SMOOTH);
+        gluQuadricOrientation(ring, GLU_OUTSIDE);
+        glRotatef(90.0f, 1.0f, 0.0f, 0.0f);  // Tourner pour que l'anneau soit vertical
+        gluDisk(ring, 0.005f, 0.008f, 12, 1);  // Anneau extérieur
+        glTranslatef(0.0f, 0.0f, 0.003f);      // Épaisseur de l'anneau
+        gluDisk(ring, 0.005f, 0.008f, 12, 1);  // Anneau extérieur (autre côté)
+        glTranslatef(0.0f, 0.0f, -0.003f);     // Revenir à la position originale
+        
+        // Dessiner la chaîne qui pend de l'anneau - caractéristique du Tensa Zangetsu
+        const int chain_links = 8;
+        const float link_radius = 0.004f;
+        const float link_thickness = 0.0015f;
+        const float chain_length = 0.15f;
+        
+        for (int i = 0; i < chain_links; i++) {
+            float t = (float)i / (chain_links - 1);
+            // Position en courbe de la chaîne
+            float y_offset = -(t * chain_length);
+            float x_offset = 0.01f * sin(t * 3.14159f * 2);  // Légère courbure
+            
+            glPushMatrix();
+            
+            // Alternance de l'orientation des maillons pour un effet de chaîne réaliste
+            if (i % 2 == 0) {
+                glTranslatef(x_offset, y_offset, 0.0f);
+                gluDisk(ring, 0.0f, link_radius, 12, 1);
+                glTranslatef(0.0f, 0.0f, link_thickness);
+                gluDisk(ring, 0.0f, link_radius, 12, 1);
+                gluCylinder(ring, link_radius, link_radius, link_thickness, 12, 1);
+            } else {
+                glTranslatef(x_offset, y_offset, 0.0f);
+                glRotatef(90.0f, 0.0f, 1.0f, 0.0f);
+                gluDisk(ring, 0.0f, link_radius, 12, 1);
+                glTranslatef(0.0f, 0.0f, link_thickness);
+                gluDisk(ring, 0.0f, link_radius, 12, 1);
+                gluCylinder(ring, link_radius, link_radius, link_thickness, 12, 1);
+            }
+            
+            glPopMatrix();
+        }
+        
+        // Ornement au bout de la chaîne (petit fragment)
+        GLfloat charm_diffuse[] = {0.2f, 0.2f, 0.2f, 1.0f};
+        glMaterialfv(GL_FRONT, GL_DIFFUSE, charm_diffuse);
+        glTranslatef(0.01f, -chain_length, 0.0f);
+        glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
+        gluCylinder(ring, 0.006f, 0.002f, 0.012f, 6, 1);  // Petit ornement conique
+        
+        gluDeleteQuadric(ring);
+        glPopMatrix();
+        
+        // Menuki (décorations sur la poignée)
+        glPushMatrix();
+        GLfloat menuki_diffuse[] = {0.85f, 0.65f, 0.1f, 1.0f};  // Or satiné
+        GLfloat menuki_specular[] = {0.5f, 0.4f, 0.1f, 1.0f};
+        glMaterialfv(GL_FRONT, GL_DIFFUSE, menuki_diffuse);
+        glMaterialfv(GL_FRONT, GL_SPECULAR, menuki_specular);
+        glMaterialf(GL_FRONT, GL_SHININESS, 50.0f);
+        
+        // Première décoration
+        glTranslatef(0.02f, 0.0f, 0.08f);
+        glScalef(0.01f, 0.01f, 0.01f);
+        gluSphere(handle, 1.0f, 8, 8);
+        
+        // Deuxième décoration  
+        glTranslatef(-4.0f, 0.0f, 8.0f);
+        gluSphere(handle, 1.0f, 8, 8);
+        glPopMatrix();
+        
+        // Tressage de la poignée (tsuka-ito)
+        glPushMatrix();
+        GLfloat ito_diffuse[] = {0.1f, 0.1f, 0.1f, 1.0f};  // Noir traditionnel
+        glMaterialfv(GL_FRONT, GL_DIFFUSE, ito_diffuse);
+        
+        // Simuler le tressage avec de petits rectangles en relief
+        float wrap_spacing = 0.025f;
+        int num_wraps = 8;
+        float wrap_width = 0.005f;
+        float wrap_height = 0.029f;
+        
+        for (int i = 0; i < num_wraps; i++) {
+            glPushMatrix();
+            glTranslatef(0.0f, 0.0f, 0.03f + i * wrap_spacing);
+            
+            // Alternance du pattern
+            if (i % 2 == 0) {
+                // Tressage horizontal
+                glBegin(GL_QUADS);
+                glNormal3f(1.0f, 0.0f, 0.0f);
+                glVertex3f(wrap_height/2, -wrap_width/2, 0.0f);
+                glVertex3f(wrap_height/2, wrap_width/2, 0.0f);
+                glVertex3f(wrap_height/2, wrap_width/2, wrap_width);
+                glVertex3f(wrap_height/2, -wrap_width/2, wrap_width);
+                
+                glVertex3f(-wrap_height/2, -wrap_width/2, 0.0f);
+                glVertex3f(-wrap_height/2, wrap_width/2, 0.0f);
+                glVertex3f(-wrap_height/2, wrap_width/2, wrap_width);
+                glVertex3f(-wrap_height/2, -wrap_width/2, wrap_width);
+                glEnd();
+            } else {
+                // Tressage vertical
+                glBegin(GL_QUADS);
+                glNormal3f(0.0f, 1.0f, 0.0f);
+                glVertex3f(-wrap_width/2, wrap_height/2, 0.0f);
+                glVertex3f(wrap_width/2, wrap_height/2, 0.0f);
+                glVertex3f(wrap_width/2, wrap_height/2, wrap_width);
+                glVertex3f(-wrap_width/2, wrap_height/2, wrap_width);
+                
+                glVertex3f(-wrap_width/2, -wrap_height/2, 0.0f);
+                glVertex3f(wrap_width/2, -wrap_height/2, 0.0f);
+                glVertex3f(wrap_width/2, -wrap_height/2, wrap_width);
+                glVertex3f(-wrap_width/2, -wrap_height/2, wrap_width);
+                glEnd();
+            }
+            
+            glPopMatrix();
+        }
+        glPopMatrix();
+        
+        // Garde (tsuba) - Croix du Tensa Zangetsu
+        glPushMatrix();
+        
+        // Activer les textures
+        glEnable(GL_TEXTURE_2D);
+        
+        // Créer une texture pour la garde en croix noire
+        static GLuint tsubaTexture = 0;
+        if (tsubaTexture == 0) {
+            // Créer la texture si elle n'existe pas
+            glGenTextures(1, &tsubaTexture);
+            glBindTexture(GL_TEXTURE_2D, tsubaTexture);
+            
+            // Générer une texture noire avec motif métallique pour la garde en croix
+            const int TEX_SIZE = 128; // Plus détaillé
+            unsigned char texData[TEX_SIZE * TEX_SIZE * 4];
+            for (int y = 0; y < TEX_SIZE; y++) {
+                for (int x = 0; x < TEX_SIZE; x++) {
+                    int idx = (y * TEX_SIZE + x) * 4;
+                    
+                    // Base noir métallique pour la garde du Tensa Zangetsu
+                    int value_r = 8;   // Noir avec teinte rouge subtile
+                    int value_g = 6;
+                    int value_b = 6;
+                    
+                    // Simuler des traces d'usure caractéristiques de l'arme d'Ichigo
+                    float noiseA = sin(x * 0.2f + y * 0.3f) * 8.0f;
+                    float noiseB = cos(x * 0.1f - y * 0.15f) * 5.0f;
+                    float combinedNoise = noiseA + noiseB;
+                    
+                    if (combinedNoise > 10.0f) {
+                        value_r += 8;  // Traces rougeâtres
+                        value_g += 2;
+                    } else if (combinedNoise < -10.0f) {
+                        value_r += 2;  // Traces plus sombres
+                        value_g += 1;
+                        value_b += 3;
+                    }
+                    
+                    // Ajouter un motif métallique
+                    int patternNoise = (x*7 + y*5) % 17;
+                    if (patternNoise > 14) {
+                        value_r += 7;
+                        value_g += 7;
+                        value_b += 10;  // Légères marques bleutées
+                    }
+                    
+                    // Bord légèrement plus brillant (éclat métallique)
+                    int distToEdge = std::min(std::min(x, TEX_SIZE-x-1), std::min(y, TEX_SIZE-y-1));
+                    if (distToEdge < 3) {
+                        value_r += 20;
+                        value_g += 20;
+                        value_b += 25;  // Éclat bleuté sur les bords
+                    }
+                    
+                    // Limiter aux valeurs valides (0-255)
+                    texData[idx]     = std::min(255, std::max(0, value_r));      // R
+                    texData[idx + 1] = std::min(255, std::max(0, value_g));      // G
+                    texData[idx + 2] = std::min(255, std::max(0, value_b));      // B
+                    texData[idx + 3] = 255;    // A - complètement opaque
+                }
+            }
+            
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, TEX_SIZE, TEX_SIZE, 0, GL_RGBA, 
+                         GL_UNSIGNED_BYTE, texData);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+            
+            // Génération des mipmaps pour la qualité visuelle
+            glGenerateMipmap(GL_TEXTURE_2D);
+        } else {
+            glBindTexture(GL_TEXTURE_2D, tsubaTexture);
+        }
+        
+        // Configurer matériau pour voir la texture - amélioré pour Tensa Zangetsu
+        GLfloat tsuba_ambient[] = {0.18f, 0.15f, 0.18f, 1.0f};  // Noir avec légère teinte bleutée
+        GLfloat tsuba_diffuse[] = {0.4f, 0.37f, 0.42f, 1.0f};   // Gris foncé légèrement bleuté
+        GLfloat tsuba_specular[] = {0.7f, 0.7f, 0.9f, 1.0f};    // Éclat métallique bleuté
+        glMaterialfv(GL_FRONT, GL_AMBIENT, tsuba_ambient);
+        glMaterialfv(GL_FRONT, GL_DIFFUSE, tsuba_diffuse);
+        glMaterialfv(GL_FRONT, GL_SPECULAR, tsuba_specular);
+        glMaterialf(GL_FRONT, GL_SHININESS, 40.0f);  // Plus brillant
+        
+        // Mode de texture modulé avec le matériau
+        glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+        
+        glTranslatef(0.0f, 0.0f, 0.28f);  // Positionner à la fin de la poignée
+        
+        // Garde en forme de croix (Tensa Zangetsu)
+        const float crossWidth = 0.02f;    // Épaisseur de la croix
+        const float crossLength = 0.08f;   // Longueur des bras
+        
+        // Barre horizontale de la croix
+        glBegin(GL_QUADS);
+        // Face avant
+        glNormal3f(0.0f, 0.0f, 1.0f);
+        glTexCoord2f(0.0f, 0.0f);
+        glVertex3f(-crossLength, -crossWidth/2, 0.0f);
+        glTexCoord2f(1.0f, 0.0f);
+        glVertex3f(crossLength, -crossWidth/2, 0.0f);
+        glTexCoord2f(1.0f, 1.0f);
+        glVertex3f(crossLength, crossWidth/2, 0.0f);
+        glTexCoord2f(0.0f, 1.0f);
+        glVertex3f(-crossLength, crossWidth/2, 0.0f);
+        
+        // Face arrière
+        glNormal3f(0.0f, 0.0f, -1.0f);
+        glTexCoord2f(0.0f, 0.0f);
+        glVertex3f(-crossLength, -crossWidth/2, -crossWidth);
+        glTexCoord2f(0.0f, 1.0f);
+        glVertex3f(-crossLength, crossWidth/2, -crossWidth);
+        glTexCoord2f(1.0f, 1.0f);
+        glVertex3f(crossLength, crossWidth/2, -crossWidth);
+        glTexCoord2f(1.0f, 0.0f);
+        glVertex3f(crossLength, -crossWidth/2, -crossWidth);
+        
+        // Côté haut
+        glNormal3f(0.0f, 1.0f, 0.0f);
+        glTexCoord2f(0.0f, 0.0f);
+        glVertex3f(-crossLength, crossWidth/2, 0.0f);
+        glTexCoord2f(1.0f, 0.0f);
+        glVertex3f(crossLength, crossWidth/2, 0.0f);
+        glTexCoord2f(1.0f, 1.0f);
+        glVertex3f(crossLength, crossWidth/2, -crossWidth);
+        glTexCoord2f(0.0f, 1.0f);
+        glVertex3f(-crossLength, crossWidth/2, -crossWidth);
+        
+        // Côté bas
+        glNormal3f(0.0f, -1.0f, 0.0f);
+        glTexCoord2f(0.0f, 0.0f);
+        glVertex3f(-crossLength, -crossWidth/2, 0.0f);
+        glTexCoord2f(0.0f, 1.0f);
+        glVertex3f(-crossLength, -crossWidth/2, -crossWidth);
+        glTexCoord2f(1.0f, 1.0f);
+        glVertex3f(crossLength, -crossWidth/2, -crossWidth);
+        glTexCoord2f(1.0f, 0.0f);
+        glVertex3f(crossLength, -crossWidth/2, 0.0f);
+        
+        // Extrémité gauche
+        glNormal3f(-1.0f, 0.0f, 0.0f);
+        glTexCoord2f(0.0f, 0.0f);
+        glVertex3f(-crossLength, -crossWidth/2, 0.0f);
+        glTexCoord2f(1.0f, 0.0f);
+        glVertex3f(-crossLength, crossWidth/2, 0.0f);
+        glTexCoord2f(1.0f, 1.0f);
+        glVertex3f(-crossLength, crossWidth/2, -crossWidth);
+        glTexCoord2f(0.0f, 1.0f);
+        glVertex3f(-crossLength, -crossWidth/2, -crossWidth);
+        
+        // Extrémité droite
+        glNormal3f(1.0f, 0.0f, 0.0f);
+        glTexCoord2f(0.0f, 0.0f);
+        glVertex3f(crossLength, -crossWidth/2, 0.0f);
+        glTexCoord2f(0.0f, 1.0f);
+        glVertex3f(crossLength, -crossWidth/2, -crossWidth);
+        glTexCoord2f(1.0f, 1.0f);
+        glVertex3f(crossLength, crossWidth/2, -crossWidth);
+        glTexCoord2f(1.0f, 0.0f);
+        glVertex3f(crossLength, crossWidth/2, 0.0f);
+        glEnd();
+        
+        // Barre verticale de la croix
+        glBegin(GL_QUADS);
+        // Face avant
+        glNormal3f(0.0f, 0.0f, 1.0f);
+        glTexCoord2f(0.0f, 0.0f);
+        glVertex3f(-crossWidth/2, -crossLength, 0.0f);
+        glTexCoord2f(1.0f, 0.0f);
+        glVertex3f(crossWidth/2, -crossLength, 0.0f);
+        glTexCoord2f(1.0f, 1.0f);
+        glVertex3f(crossWidth/2, crossLength, 0.0f);
+        glTexCoord2f(0.0f, 1.0f);
+        glVertex3f(-crossWidth/2, crossLength, 0.0f);
+        
+        // Face arrière
+        glNormal3f(0.0f, 0.0f, -1.0f);
+        glTexCoord2f(0.0f, 0.0f);
+        glVertex3f(-crossWidth/2, -crossLength, -crossWidth);
+        glTexCoord2f(0.0f, 1.0f);
+        glVertex3f(-crossWidth/2, crossLength, -crossWidth);
+        glTexCoord2f(1.0f, 1.0f);
+        glVertex3f(crossWidth/2, crossLength, -crossWidth);
+        glTexCoord2f(1.0f, 0.0f);
+        glVertex3f(crossWidth/2, -crossLength, -crossWidth);
+        
+        // Côté haut
+        glNormal3f(0.0f, 1.0f, 0.0f);
+        glTexCoord2f(0.0f, 0.0f);
+        glVertex3f(-crossWidth/2, crossLength, 0.0f);
+        glTexCoord2f(1.0f, 0.0f);
+        glVertex3f(crossWidth/2, crossLength, 0.0f);
+        glTexCoord2f(1.0f, 1.0f);
+        glVertex3f(crossWidth/2, crossLength, -crossWidth);
+        glTexCoord2f(0.0f, 1.0f);
+        glVertex3f(-crossWidth/2, crossLength, -crossWidth);
+        
+        // Côté bas
+        glNormal3f(0.0f, -1.0f, 0.0f);
+        glTexCoord2f(0.0f, 0.0f);
+        glVertex3f(-crossWidth/2, -crossLength, 0.0f);
+        glTexCoord2f(0.0f, 1.0f);
+        glVertex3f(-crossWidth/2, -crossLength, -crossWidth);
+        glTexCoord2f(1.0f, 1.0f);
+        glVertex3f(crossWidth/2, -crossLength, -crossWidth);
+        glTexCoord2f(1.0f, 0.0f);
+        glVertex3f(crossWidth/2, -crossLength, 0.0f);
+        
+        // Extrémité gauche
+        glNormal3f(-1.0f, 0.0f, 0.0f);
+        glTexCoord2f(0.0f, 0.0f);
+        glVertex3f(-crossWidth/2, -crossLength, 0.0f);
+        glTexCoord2f(1.0f, 0.0f);
+        glVertex3f(-crossWidth/2, crossLength, 0.0f);
+        glTexCoord2f(1.0f, 1.0f);
+        glVertex3f(-crossWidth/2, crossLength, -crossWidth);
+        glTexCoord2f(0.0f, 1.0f);
+        glVertex3f(-crossWidth/2, -crossLength, -crossWidth);
+        
+        // Extrémité droite
+        glNormal3f(1.0f, 0.0f, 0.0f);
+        glTexCoord2f(0.0f, 0.0f);
+        glVertex3f(crossWidth/2, -crossLength, 0.0f);
+        glTexCoord2f(0.0f, 1.0f);
+        glVertex3f(crossWidth/2, -crossLength, -crossWidth);
+        glTexCoord2f(1.0f, 1.0f);
+        glVertex3f(crossWidth/2, crossLength, -crossWidth);
+        glTexCoord2f(1.0f, 0.0f);
+        glVertex3f(crossWidth/2, crossLength, 0.0f);
+        glEnd();
+        
+        // Désactiver la texture après avoir terminé
+        glDisable(GL_TEXTURE_2D);
+        
+        // Trou central pour la lame
+        GLfloat hole_diffuse[] = {0.01f, 0.01f, 0.01f, 1.0f};  // Noir profond
+        glMaterialfv(GL_FRONT, GL_DIFFUSE, hole_diffuse);
+        glTranslatef(0.0f, 0.0f, 0.001f);  // Légèrement devant
+        gluDisk(handle, 0.0f, 0.011f, 12, 1);  // Trou pour la lame
+        glPopMatrix();
+        
+        // Collier (habaki) - pièce métallique entre la lame et la garde
+        glPushMatrix();
+        GLfloat habaki_diffuse[] = {0.7f, 0.6f, 0.3f, 1.0f};  // Bronze-doré
+        GLfloat habaki_specular[] = {0.9f, 0.8f, 0.4f, 1.0f};
+        glMaterialfv(GL_FRONT, GL_DIFFUSE, habaki_diffuse);
+        glMaterialfv(GL_FRONT, GL_SPECULAR, habaki_specular);
+        glMaterialf(GL_FRONT, GL_SHININESS, 70.0f);
+        
+        glTranslatef(0.0f, 0.0f, 0.28f);  // À la même position que la garde
+        gluCylinder(handle, 0.01f, 0.008f, 0.02f, 12, 1);  // Petite pièce conique
+        glPopMatrix();
+        
+        // Lame (ha) - Lame noire du Bankai de Ichigo (Tensa Zangetsu)
+        glPushMatrix();
+        
+        // Activer les textures pour la lame
+        glEnable(GL_TEXTURE_2D);
+        
+        // Créer une texture spécifique pour la lame de Tensa Zangetsu
+        static GLuint bladeTexture = 0;
+        if (bladeTexture == 0) {
+            // Créer la texture si elle n'existe pas
+            glGenTextures(1, &bladeTexture);
+            glBindTexture(GL_TEXTURE_2D, bladeTexture);
+            
+            // Générer une texture noire avec un léger motif pour Tensa Zangetsu
+            const int BLADE_TEX_SIZE = 128;
+            unsigned char bladeTexData[BLADE_TEX_SIZE * BLADE_TEX_SIZE * 4];
+            
+            for (int y = 0; y < BLADE_TEX_SIZE; y++) {
+                for (int x = 0; x < BLADE_TEX_SIZE; x++) {
+                    int idx = (y * BLADE_TEX_SIZE + x) * 4;
+                    
+                    // Base noir profond pour la lame de Tensa Zangetsu
+                    int baseColor = 5;  // Noir très profond
+                    
+                    // Ajouter motif de "vagues" pour simuler l'énergie spirituelle
+                    float wave = sin(y * 0.2f + x * 0.1f) * 3.0f;
+                    
+                    // Ajouter un effet de bord rougeoyant (Reiatsu d'Ichigo)
+                    int distToEdgeX = std::min(x, BLADE_TEX_SIZE - x - 1);
+                    int distToEdgeY = std::min(y, BLADE_TEX_SIZE - y - 1);
+                    int distToEdge = std::min(distToEdgeX, distToEdgeY);
+                    
+                    int redGlow = 0;
+                    int blueGlow = 0;
+                    
+                    if (distToEdge < 5) {
+                        redGlow = (5 - distToEdge) * 20;  // Lueur rouge sur les bords
+                        blueGlow = (5 - distToEdge) * 5;   // Légère teinte bleue
+                    }
+                    
+                    // Effets de détails sur la lame
+                    float noise = (((x*3)^(y*7)) % 13) / 13.0f;
+                    int detail = (int)(noise * 5.0f);
+                    
+                    // Couleurs finales
+                    bladeTexData[idx]     = baseColor + detail + redGlow;           // R
+                    bladeTexData[idx + 1] = baseColor + detail;                     // G
+                    bladeTexData[idx + 2] = baseColor + detail + blueGlow;          // B
+                    bladeTexData[idx + 3] = 255;                                    // A
+                }
+            }
+            
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, BLADE_TEX_SIZE, BLADE_TEX_SIZE, 0, GL_RGBA, 
+                         GL_UNSIGNED_BYTE, bladeTexData);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        } else {
+            glBindTexture(GL_TEXTURE_2D, bladeTexture);
+        }
+        
+        // Configuration du matériau pour que la texture soit bien visible
+        GLfloat blade_ambient[] = {0.15f, 0.05f, 0.05f, 1.0f};   // Légère teinte rouge
+        GLfloat blade_diffuse[] = {0.3f, 0.3f, 0.3f, 1.0f};      // Gris foncé pour bien voir la texture
+        GLfloat blade_specular[] = {0.9f, 0.6f, 0.6f, 1.0f};     // Reflet rougeâtre brillant
+        glMaterialfv(GL_FRONT, GL_AMBIENT, blade_ambient);
+        glMaterialfv(GL_FRONT, GL_DIFFUSE, blade_diffuse);
+        glMaterialfv(GL_FRONT, GL_SPECULAR, blade_specular);
+        glMaterialf(GL_FRONT, GL_SHININESS, 128.0f);  // Très brillant
+        
+        // Mode de texture combiné avec le matériau pour un meilleur rendu
+        glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE); - valeur maximale
+        
+        // Position de départ de la lame
+        glTranslatef(0.0f, 0.0f, 0.3f);
+        
+        // Dessiner la lame (plus fine et moins courbée pour le Bankai)
+        const int blade_segments = 15;            // Plus de segments pour un rendu plus lisse
+        const float blade_length = 1.0f;          // Encore plus longue pour être fidèle à Tensa Zangetsu
+        const float curve_amount = 0.01f;         // Très légère courbure (quasiment droit)
+        const float blade_width_start = 0.022f;   // Plus fine
+        const float blade_width_end = 0.003f;     // Pointe très affûtée
+        const float blade_height = 0.002f;        // Encore plus fine et tranchante
+        
+        // Côté supérieur de la lame (partie plate)
+        glBegin(GL_TRIANGLE_STRIP);
+        for (int i = 0; i <= blade_segments; i++) {
+            float t = (float)i / blade_segments;
+            float z = t * blade_length;
+            float width = blade_width_start * (1.0f - t) + blade_width_end * t;
+            
+            // Coordonnées de texture qui s'étirent le long de la lame
+            float texU = t * 3.0f;  // Répéter la texture 3 fois
+            
+            // Côté droit
+            glNormal3f(0.0f, 1.0f, 0.1f);
+            glTexCoord2f(texU, 0.0f);
+            glVertex3f(width/2, blade_height/2, z);
+            
+            // Côté gauche
+            glTexCoord2f(texU, 1.0f);
+            glVertex3f(-width/2, blade_height/2, z);
+        }
+        glEnd();
+        
+        // Côté inférieur de la lame (partie plate)
+        glBegin(GL_TRIANGLE_STRIP);
+        for (int i = 0; i <= blade_segments; i++) {
+            float t = (float)i / blade_segments;
+            float z = t * blade_length;
+            float width = blade_width_start * (1.0f - t) + blade_width_end * t;
+            
+            // Coordonnées de texture qui s'étirent le long de la lame
+            float texU = t * 3.0f;  // Répéter la texture 3 fois
+            
+            // Côté droit
+            glNormal3f(0.0f, -1.0f, 0.1f);
+            glTexCoord2f(texU, 0.0f);
+            glVertex3f(width/2, -blade_height/2, z);
+            
+            // Côté gauche
+            glTexCoord2f(texU, 1.0f);
+            glVertex3f(-width/2, -blade_height/2, z);
+        }
+        glEnd();
+        
+        // Bord tranchant (ha) - côté convexe
+        glBegin(GL_TRIANGLE_STRIP);
+        for (int i = 0; i <= blade_segments; i++) {
+            float t = (float)i / blade_segments;
+            float z = t * blade_length;
+            float width = blade_width_start * (1.0f - t) + blade_width_end * t;
+            
+            // Coordonnées de texture pour le bord
+            float texU = t * 5.0f;  // Étirer différemment sur le bord
+            
+            glNormal3f(1.0f, 0.0f, 0.1f);
+            glTexCoord2f(texU, 0.0f);
+            glVertex3f(width/2, blade_height/2, z);
+            glTexCoord2f(texU, 0.1f);
+            glVertex3f(width/2, -blade_height/2, z);
+        }
+        glEnd();
+        
+        // Dos de la lame (mune) - côté concave
+        glBegin(GL_TRIANGLE_STRIP);
+        for (int i = 0; i <= blade_segments; i++) {
+            float t = (float)i / blade_segments;
+            float z = t * blade_length;
+            float width = blade_width_start * (1.0f - t) + blade_width_end * t;
+            
+            // Coordonnées de texture pour le dos
+            float texU = t * 5.0f;  // Étirer différemment sur le dos
+            
+            glNormal3f(-1.0f, 0.0f, 0.1f);
+            glTexCoord2f(texU, 0.9f);
+            glVertex3f(-width/2, blade_height/2, z);
+            glTexCoord2f(texU, 1.0f);
+            glVertex3f(-width/2, -blade_height/2, z);
+        }
+        glEnd();
+        
+        // Pointe de la lame (kissaki) - améliorée pour Tensa Zangetsu
+        glBegin(GL_TRIANGLES);
+        glNormal3f(0.0f, 0.0f, 1.0f);
+        
+        // La pointe de la lame - face supérieure
+        glTexCoord2f(1.0f, 0.5f);  // Utiliser un point plus chaud de la texture
+        glVertex3f(0.0f, 0.0f, blade_length + 0.025f);  // Pointe légèrement plus longue
+        glTexCoord2f(0.8f, 0.0f);
+        glVertex3f(blade_width_end/2, blade_height/2, blade_length);
+        glTexCoord2f(0.8f, 1.0f);
+        glVertex3f(-blade_width_end/2, blade_height/2, blade_length);
+        
+        // La pointe de la lame - face inférieure
+        glTexCoord2f(1.0f, 0.5f);
+        glVertex3f(0.0f, 0.0f, blade_length + 0.025f);  // Pointe
+        glTexCoord2f(0.8f, 0.0f);
+        glVertex3f(blade_width_end/2, -blade_height/2, blade_length);
+        glTexCoord2f(0.8f, 1.0f);
+        glVertex3f(-blade_width_end/2, -blade_height/2, blade_length);
+        
+        // Côté droit de la pointe
+        glTexCoord2f(1.0f, 0.5f);
+        glVertex3f(0.0f, 0.0f, blade_length + 0.025f);  // Pointe
+        glTexCoord2f(0.9f, 0.0f);
+        glVertex3f(blade_width_end/2, blade_height/2, blade_length);
+        glTexCoord2f(0.9f, 1.0f);
+        glVertex3f(blade_width_end/2, -blade_height/2, blade_length);
+        
+        // Côté gauche de la pointe
+        glTexCoord2f(1.0f, 0.5f);
+        glVertex3f(0.0f, 0.0f, blade_length + 0.025f);  // Pointe
+        glTexCoord2f(0.9f, 0.0f);
+        glVertex3f(-blade_width_end/2, blade_height/2, blade_length);
+        glTexCoord2f(0.9f, 1.0f);
+        glVertex3f(-blade_width_end/2, -blade_height/2, blade_length);
+        glEnd();
+        
+        // Effet de lueur sur la pointe (caractéristique du Bankai)
+        glDepthMask(GL_FALSE);  // Désactiver écriture dans le depth buffer
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+        
+        // Matériau émissif pour la lueur
+        GLfloat glow_emission[] = {0.3f, 0.0f, 0.0f, 0.2f};  // Lueur rouge subtile
+        glMaterialfv(GL_FRONT, GL_EMISSION, glow_emission);
+        
+        // Dessiner une petite sphère lumineuse à la pointe
+        GLUquadric* glowSphere = gluNewQuadric();
+        glTranslatef(0.0f, 0.0f, blade_length + 0.02f);
+        gluSphere(glowSphere, 0.005f, 8, 8);
+        gluDeleteQuadric(glowSphere);
+        
+        // Réinitialiser les paramètres
+        GLfloat no_emission[] = {0.0f, 0.0f, 0.0f, 1.0f};
+        glMaterialfv(GL_FRONT, GL_EMISSION, no_emission);
+        glDisable(GL_BLEND);
+        glDepthMask(GL_TRUE);
+        
+        // Désactiver les textures après avoir fini
+        glDisable(GL_TEXTURE_2D);
+        
+        glPopMatrix();
+        
+        // Nettoyer les ressources
+        gluDeleteQuadric(handle);
 
         glPopMatrix();
     }
@@ -603,7 +1324,7 @@ void GameWidget::initializeCamera()
         // Set up timer for camera frame updates
         cameraTimer = new QTimer(this);
         connect(cameraTimer, &QTimer::timeout, this, &GameWidget::updateFrame);
-        cameraTimer->start(33); // ~30 fps
+        cameraTimer->start(60); // ~15 fps - réduit pour moins charger le CPU
 
         qDebug() << "Camera initialized successfully";
     }
@@ -613,6 +1334,10 @@ void GameWidget::initializeCamera()
         qDebug() << "Failed to initialize camera, error code:" << openStatus;
     }
 }
+
+// Variable pour limiter les détections de main
+static int frameCounter = 0;
+static const int FRAME_SKIP = 2; // Traiter une frame sur 2 pour réduire la charge CPU
 
 void GameWidget::updateFrame()
 {
@@ -624,6 +1349,14 @@ void GameWidget::updateFrame()
     // Get new frame from camera
     if (cameraHandler->getFrame(currentFrame))
     {
+        // Augmenter le compteur de frames
+        frameCounter++;
+        
+        // Ne traiter qu'une frame sur FRAME_SKIP pour réduire la charge CPU
+        if (frameCounter % FRAME_SKIP != 0) {
+            return;
+        }
+
         // Convert to grayscale for face detection
         cv::cvtColor(currentFrame, grayFrame, cv::COLOR_BGR2GRAY);
 
@@ -698,23 +1431,100 @@ void GameWidget::convertCameraPointToGameSpace(const cv::Point &cameraPoint, flo
     qDebug() << "Projected point:" << projectedPoint.x() << projectedPoint.y() << projectedPoint.z();
 }
 
+// Vecteurs pré-calculés pour les transformations du katana (optimisation des performances)
+// Pour ne pas recalculer ces valeurs à chaque frame
+static QVector3D cachedBladeDirection;
+static bool directionCalculated = false;
+
 bool GameWidget::isFruitHit(const cv::Point &point, Fruit *fruit, QTime currentTime)
 {
     // Convert camera point to game space
     float gameX, gameZ;
     convertCameraPointToGameSpace(point, gameX, gameZ);
-
+    
     // Get fruit position
     QVector3D fruitPos = fruit->getPosition(currentTime);
-
-    // Calculate distance in 3D space using the projected point
-    float dx = projectedPoint.x() - fruitPos.x();
-    float dy = projectedPoint.y() - fruitPos.y();
-    float dz = projectedPoint.z() - fruitPos.z();
-    float distance = sqrt(dx * dx + dy * dy + dz * dz);
-
-    // Check if distance is less than combined radii (0.5 for fruit + 0.15 for ball = 0.65)
-    return distance < 0.65f && fruitPos.y() > 0.5f; // Only count hits when fruit is above ground
+    
+    // Optimisation: calcul de la direction une seule fois, et réutilisation
+    if (!directionCalculated) {
+        // Start with a vector pointing in +Z (sword blade direction)
+        QVector3D bladeDirection(0.0f, 0.0f, 1.0f);
+        
+        // Apply the rotations in reverse order (since we're calculating a direction vector)
+        // Pré-calculer les constantes trigonométriques
+        const float angleZ = -5.0f * M_PI / 180.0f;
+        const float cosZ = cos(angleZ);
+        const float sinZ = sin(angleZ);
+        const float angleX = -10.0f * M_PI / 180.0f;
+        const float cosX = cos(angleX);
+        const float sinX = sin(angleX);
+        const float angleY = -90.0f * M_PI / 180.0f;
+        const float cosY = cos(angleY);
+        const float sinY = sin(angleY);
+        
+        // Appliquer les rotations
+        bladeDirection = QVector3D(
+            bladeDirection.x() * cosZ - bladeDirection.y() * sinZ,
+            bladeDirection.x() * sinZ + bladeDirection.y() * cosZ,
+            bladeDirection.z()
+        );
+        
+        bladeDirection = QVector3D(
+            bladeDirection.x(),
+            bladeDirection.y() * cosX - bladeDirection.z() * sinX,
+            bladeDirection.y() * sinX + bladeDirection.z() * cosX
+        );
+        
+        bladeDirection = QVector3D(
+            bladeDirection.x() * cosY + bladeDirection.z() * sinY,
+            bladeDirection.y(),
+            -bladeDirection.x() * sinY + bladeDirection.z() * cosY
+        );
+        
+        // Normalize the direction vector
+        bladeDirection.normalize();
+        
+        // Mémoriser pour les prochains appels
+        cachedBladeDirection = bladeDirection;
+        directionCalculated = true;
+    }
+    
+    // Calculate blade position using cached direction
+    QVector3D bladeBase = projectedPoint;
+    QVector3D bladeStartPos = bladeBase + cachedBladeDirection * 0.3f;
+    
+    // Optimisation: vérifier d'abord si le fruit est proche du milieu de la lame pour un test rapide
+    float midPointT = 0.5f;
+    QVector3D midBladePoint = bladeStartPos + cachedBladeDirection * (midPointT * 0.8f);
+    float dx = midBladePoint.x() - fruitPos.x();
+    float dy = midBladePoint.y() - fruitPos.y();
+    float dz = midBladePoint.z() - fruitPos.z();
+    float midPointDistance = sqrt(dx * dx + dy * dy + dz * dz);
+    
+    // Si le point central est déjà trop loin, pas besoin de vérifier les autres points
+    if (midPointDistance > 0.75f || fruitPos.y() <= 0.5f) {
+        return false;
+    }
+    
+    // Si on est assez proche, faire un test plus précis avec 3 points au lieu de 5
+    const int numPoints = 3;  // Réduit de 5 à 3 points pour l'optimisation
+    
+    for (int i = 0; i < numPoints; i++) {
+        float t = (i / (float)(numPoints - 1));
+        QVector3D bladePoint = bladeStartPos + cachedBladeDirection * (t * 0.8f);
+        
+        dx = bladePoint.x() - fruitPos.x();
+        dy = bladePoint.y() - fruitPos.y();
+        dz = bladePoint.z() - fruitPos.z();
+        float distance = sqrt(dx * dx + dy * dy + dz * dz);
+        
+        // Check if distance is less than fruit radius plus a small tolerance
+        if (distance < 0.5f) {
+            return true;
+        }
+    }
+    
+    return false;
 }
 
 void GameWidget::keyPressEvent(QKeyEvent *event)
