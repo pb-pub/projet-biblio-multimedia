@@ -136,7 +136,6 @@ GameWidget::~GameWidget()
 void GameWidget::updateFruitDisplay()
 {
     // Update time for animation
-
     if (ui->openGLWidget)
     {
         // Force an update to the OpenGL widget, which should trigger paintGL
