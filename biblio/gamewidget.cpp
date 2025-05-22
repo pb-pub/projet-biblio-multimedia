@@ -24,13 +24,7 @@
 const float MAX_DIMENSION = 33.0f;
 
 GameWidget::GameWidget(QWidget *parent)
-    : QWidget(parent), ui(ne        // Rotation pour positionner le katana à l'endroit
-        glRotatef(-90.0f, 0.0f, 1.0f, 0.0f);  // Tourner le katana autour de l'axe Y
-        
-        // Dessiner un katana japonais authentique
-        // Réorienter pour aligner correctement le katana dans l'espace 
-        glRotatef(-10.0f, 1.0f, 0.0f, 0.0f);  // Très légère inclinaison vers l'avant
-        glRotatef(-5.0f, 0.0f, 0.0f, 1.0f);   // Très légère inclinaison sur le côtéameWidget), m_fruit(std::vector<Fruit *>()), m_cameraTextureId(0) // Initialize camera texture ID
+    : QWidget(parent), ui(new Ui::GameWidget), m_fruit(std::vector<Fruit *>()), m_cameraTextureId(0) // Initialize camera texture ID
       ,
       m_sliceSound(new QSoundEffect(this)) // Initialize sound effect
       ,
