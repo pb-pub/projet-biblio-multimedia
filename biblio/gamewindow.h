@@ -40,8 +40,8 @@ public:
 
 
 private:
-    int lives;          ///< Nombre de vies restantes pour le joueur. Initialisé à 3.
-    int score;          ///< Score actuel du joueur. Initialisé à 0.
+    int lives = 3;          ///< Nombre de vies restantes pour le joueur. Initialisé à 3.
+    int score = 0;          ///< Score actuel du joueur. Initialisé à 0.
     GameWidget* gameWidget; ///< Pointeur vers le widget principal du jeu (où se déroule l'action 3D).
     Ui::GameWindow *ui; ///< Pointeur vers l'objet d'interface utilisateur généré par Qt Designer.
 
