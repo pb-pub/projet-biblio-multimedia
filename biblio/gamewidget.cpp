@@ -565,6 +565,24 @@ void GameWidget::paintGL()
         // Dessiner le katana
         m_katana->draw(projectedPoint);
         
+        // Debug : dessiner une sphère semi-transparente pour montrer la zone de collision
+        glPushMatrix();
+        glTranslatef(projectedPoint.x(), projectedPoint.y(), projectedPoint.z());
+        
+        // Rendre la sphère semi-transparente
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glColor4f(1.0f, 0.0f, 0.0f, 0.3f); // Rouge semi-transparent
+        
+        // Créer une sphère pour visualiser la zone de collision
+        GLUquadric* debugQuadric = gluNewQuadric();
+        gluSphere(debugQuadric, 0.6f, 16, 16); // Rayon réduit pour correspondre à la nouvelle hitbox
+        gluDeleteQuadric(debugQuadric);
+        
+        glDisable(GL_BLEND);
+        glColor4f(1.0f, 1.0f, 1.0f, 1.0f); // Remettre la couleur normale
+        glPopMatrix();
+        
         // Restaurer l'état de la matrice
         glPopMatrix();
     }
@@ -668,11 +686,46 @@ void GameWidget::updateFrame() {
         // S'assurer que hasProjectedPoint est mis à false si aucun point n'est détecté
         hasProjectedPoint = false;
 
+        qDebug() << "Detected points:" << detectedPoints.size();
+        qDebug() << "Active fruits:" << m_fruit.size();
+
         for (const auto &point : detectedPoints) {
             float gameX, gameZ;
             convertCameraPointToGameSpace(point, gameX, gameZ);
             hasProjectedPoint = true; // Mettre à true quand un point est détecté et converti
-            // Le reste du code...
+            
+            // Check collision with fruits
+            QTime currentTime = QTime::currentTime();
+            for (auto it = m_fruit.begin(); it != m_fruit.end();) {
+                Fruit* fruit = *it;
+                
+                // Only check collision for fruits that are not already cut
+                if (!fruit->isCut()) {
+                    if (isFruitHit(point, fruit, currentTime)) {
+                        // Cut the fruit using the katana position and direction
+                        QVector3D katanaPos = projectedPoint;
+                        QVector3D normalVector(0.0f, 0.0f, 1.0f); // Simple normal for cutting plane
+                        fruit->cut(katanaPos, normalVector, currentTime);
+                        
+                        // Play sound and emit signal based on fruit type
+                        if (fruit->isBomb()) {
+                            qDebug() << "BOMB HIT! Life decreased.";
+                            m_shootSound->play();
+                            emit lifeDecrease();
+                        } else {
+                            qDebug() << "FRUIT HIT! Score increased.";
+                            m_sliceSound->play();
+                            emit scoreIncreased();
+                        }
+                        
+                        qDebug() << "Fruit successfully cut!";
+                        break; // Une fois qu'un fruit est touché, on sort de la boucle
+                    }
+                } else {
+                    qDebug() << "Skipping already cut fruit";
+                }
+                ++it;
+            }
         }
 
         update();
@@ -710,34 +763,29 @@ bool GameWidget::isFruitHit(const cv::Point &point, Fruit *fruit, QTime currentT
 
     // Get fruit position
     QVector3D fruitPos = fruit->getPosition(currentTime);
-
-    // Position de la lame du katana avec une hitbox plus grande
-    float bladeTipY = projectedPoint.y() + 2.5f;    // Augmenté pour une meilleure portée verticale
-    float bladeBaseY = projectedPoint.y() - 0.8f;   // Augmenté pour une meilleure portée vers le bas
-
-    // Distance horizontale entre le fruit et la lame
-    float dx = projectedPoint.x() - fruitPos.x();
-    float dz = projectedPoint.z() - fruitPos.z();
-    float horizontalDist = sqrt(dx * dx + dz * dz);
-
-    // Zone de détection verticale plus généreuse
-    bool isInBladeHeight = fruitPos.y() >= (bladeBaseY - 0.8f) && fruitPos.y() <= (bladeTipY + 0.8f);
     
-    // Hitbox horizontale beaucoup plus large
-    float hitboxRadius = 2.0f;  // Augmenté significativement
-
-    // Debug des positions
-    qDebug() << "Fruit position:" << fruitPos;
+    // Utiliser une approche plus simple : distance euclidienne 3D
+    float distance3D = (fruitPos - projectedPoint).length();
+    const float hitRadius = 0.6f; // Rayon de collision réduit pour plus de difficulté
+    
+    // Debug complet
+    qDebug() << "=== COLLISION DEBUG ===";
+    qDebug() << "Camera point:" << point.x << "," << point.y;
     qDebug() << "Katana position:" << projectedPoint;
-    qDebug() << "Distance:" << horizontalDist;
-    qDebug() << "Height check:" << isInBladeHeight;
-
-    // Vérification de la collision avec conditions plus souples
-    bool isHit = isInBladeHeight && horizontalDist < hitboxRadius && fruitPos.y() > 0.1f;
+    qDebug() << "Fruit position:" << fruitPos;
+    qDebug() << "3D Distance:" << distance3D;
+    qDebug() << "Hit radius:" << hitRadius;
+    qDebug() << "Fruit is bomb:" << fruit->isBomb();
+    qDebug() << "Fruit is cut:" << fruit->isCut();
+    
+    bool isHit = distance3D <= hitRadius;
     
     if (isHit) {
-        qDebug() << "HIT!";
+        qDebug() << "*** COLLISION DÉTECTÉE! ***";
+    } else {
+        qDebug() << "Pas de collision (distance trop grande)";
     }
+    qDebug() << "========================";
 
     return isHit;
 }
