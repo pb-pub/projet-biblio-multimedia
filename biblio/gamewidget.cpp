@@ -865,7 +865,7 @@ bool GameWidget::isFruitHit(const cv::Point &point, Fruit *fruit, QTime currentT
     qDebug() << "Height check:" << isInBladeHeight;
 
     // Vérification de la collision avec conditions plus souples
-    bool isHit = isInBladeHeight && horizontalDist < hitboxRadius && fruitPos.y() > 0.1f;
+    isHit = isInBladeHeight && horizontalDist < hitboxRadius && fruitPos.y() > 0.1f;
 
     if (isHit)
     {
