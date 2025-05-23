@@ -60,7 +60,7 @@ jobs:
     - name: Install OpenCV (Windows)
       if: matrix.os == 'windows-2022'
       run: |
-        vcpkg install opencv[core,imgproc,objdetect]:x64-windows
+        vcpkg install opencv:x64-windows
         echo "CMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake" >> $GITHUB_ENV
       shell: bash
 
