@@ -75,6 +75,9 @@ jobs:
         sudo apt-get install -y libopencv-dev
         sudo apt-get install -y libglu1-mesa-dev freeglut3-dev mesa-common-dev
         sudo apt-get install -y libasound2-dev libpulse-dev
+        # Install linuxdeployqt
+        wget -O linuxdeployqt https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage
+        chmod +x linuxdeployqt
 
     - name: Configure CMake
       run: |
@@ -92,9 +95,12 @@ jobs:
         mkdir -p package/biblio
         cp biblio package/biblio/
         cp -r assets package/biblio/
+        # Bundle Qt libraries
+        ../linuxdeployqt package/biblio/biblio -bundle-non-qt-libs -no-translations -no-copy-copyright-files
         # Create launcher script
         echo '#!/bin/bash' > package/biblio/run.sh
         echo 'cd "$(dirname "$0")"' >> package/biblio/run.sh
+        echo 'export LD_LIBRARY_PATH="$PWD/lib:$LD_LIBRARY_PATH"' >> package/biblio/run.sh
         echo './biblio' >> package/biblio/run.sh
         chmod +x package/biblio/run.sh
         tar -czf ../biblio-linux.tar.gz -C package .
