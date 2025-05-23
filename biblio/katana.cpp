@@ -185,3 +185,17 @@ void Katana::drawHandle() {
     glPopMatrix();
     
 }
+
+std::vector<QVector3D> Katana::getBladePosition() {
+    std::vector<QVector3D> bladePositions;
+    
+    bladePositions.push_back(QVector3D(-0.05f, 0.0f, 0.01f));   // Base gauche
+    bladePositions.push_back(QVector3D(0.05f, 0.0f, 0.01f));    // Base droite
+    bladePositions.push_back(QVector3D(0.05f, 1.0f, 0.01f));    // Milieu droit
+    bladePositions.push_back(QVector3D(-0.05f, 1.0f, 0.01f));   // Milieu gauche
+    bladePositions.push_back(QVector3D(0.05f, 2.0f, 0.01f));    // Haut droit
+    bladePositions.push_back(QVector3D(-0.05f, 2.0f, 0.01f));   // Haut gauche
+    bladePositions.push_back(QVector3D(-0.05f, 2.2f, 0.0f));    // Pointe
+    
+    return bladePositions;
+}

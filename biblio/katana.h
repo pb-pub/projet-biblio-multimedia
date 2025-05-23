@@ -52,6 +52,12 @@ public:
      */
     void setTextures(GLuint blade, GLuint handle, GLuint chain) { textures[0] = blade; textures[1] = handle; textures[2] = chain; } 
 
+    /**
+     * @brief renvoie la position de la lame du katana.
+     * @return Vecteur de positions de la lame.
+     */
+    std::vector<QVector3D> getBladePosition();
+
 private:
     /**
      * @brief Dessine la lame du katana.

@@ -61,8 +61,8 @@ Fruit::FruitType Fruit::getRandomFruitType()
 QVector3D Fruit::getRandomInitSpeed()
 {
     // Generate a random speed vector
-    float x = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.4f - 1.2f;  // Random value between -2 and 2
-    float y = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 1.4f + 5.f;   // Random value between 3 and 7
+    float x = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.f - 1.f;  // Random value between -2 and 2
+    float y = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 1.2f + 5.6f;   // Random value between 3 and 7
     float z = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 8.0f - 32.0f; // Random value between -35 and -25
     return QVector3D(x, y, z);
 }
@@ -470,7 +470,7 @@ void Fruit::drawBomb(QTime currentTime, float firstPart)
 QVector3D Fruit::getPosition(QTime currentTime, float firstPart)
 {
     // Calculate the position of the fruit based on its trajectory
-    float slowdownFactor = 1.5f;
+    float slowdownFactor = 3.f;
     float deltaT = startTime.msecsTo(currentTime) / 1000.0f;
     deltaT /= slowdownFactor; // Slow down the fruit's fall speed
 

@@ -565,23 +565,23 @@ void GameWidget::paintGL()
         // Dessiner le katana
         m_katana->draw(projectedPoint);
         
-        // Debug : dessiner une sphère semi-transparente pour montrer la zone de collision
-        glPushMatrix();
-        glTranslatef(projectedPoint.x(), projectedPoint.y(), projectedPoint.z());
+        // // Debug : dessiner une sphère semi-transparente pour montrer la zone de collision
+        // glPushMatrix();
+        // glTranslatef(projectedPoint.x(), projectedPoint.y(), projectedPoint.z());
         
-        // Rendre la sphère semi-transparente
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        glColor4f(1.0f, 0.0f, 0.0f, 0.3f); // Rouge semi-transparent
+        // // Rendre la sphère semi-transparente
+        // glEnable(GL_BLEND);
+        // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        // glColor4f(1.0f, 0.0f, 0.0f, 0.3f); // Rouge semi-transparent
         
-        // Créer une sphère pour visualiser la zone de collision
-        GLUquadric* debugQuadric = gluNewQuadric();
-        gluSphere(debugQuadric, 0.6f, 16, 16); // Rayon réduit pour correspondre à la nouvelle hitbox
-        gluDeleteQuadric(debugQuadric);
+        // // Créer une sphère pour visualiser la zone de collision
+        // GLUquadric* debugQuadric = gluNewQuadric();
+        // gluSphere(debugQuadric, 0.6f, 16, 16); // Rayon réduit pour correspondre à la nouvelle hitbox
+        // gluDeleteQuadric(debugQuadric);
         
-        glDisable(GL_BLEND);
-        glColor4f(1.0f, 1.0f, 1.0f, 1.0f); // Remettre la couleur normale
-        glPopMatrix();
+        // glDisable(GL_BLEND);
+        // glColor4f(1.0f, 1.0f, 1.0f, 1.0f); // Remettre la couleur normale
+        // glPopMatrix();
         
         // Restaurer l'état de la matrice
         glPopMatrix();
@@ -775,22 +775,70 @@ bool GameWidget::isFruitHit(const cv::Point &point, Fruit *fruit, QTime currentT
 
     // Get fruit position
     QVector3D fruitPos = fruit->getPosition(currentTime);
+
+    // Get the blade positions in local coordinates
+    std::vector<QVector3D> localBladePoints = m_katana->getBladePosition();
     
-    // Utiliser une approche plus simple : distance euclidienne 3D
-    float distance3D = (fruitPos - projectedPoint).length();
-    const float hitRadius = 0.6f; // Rayon de collision réduit pour plus de difficulté
+    // Transform blade points to world coordinates using the same transformations as in draw()
+    std::vector<QVector3D> worldBladePoints;
     
-    // Debug complet
+    for (const auto& localPoint : localBladePoints) {
+        // Apply the same transformations as in Katana::draw()
+        QVector3D worldPoint = localPoint;
+        
+        // Apply scaling (0.6f from draw method)
+        worldPoint *= 0.6f;
+        
+        // Translate to katana position (projectedPoint)
+        worldPoint += projectedPoint;
+        
+        worldBladePoints.push_back(worldPoint);
+    }
+    
+    // Check collision with any point along the blade
+    const float hitRadius = 0.6f;
+    bool isHit = false;
+    float minDistance = std::numeric_limits<float>::max();
+    
+    // Check collision with blade edges (line segments)
+    for (size_t i = 0; i < worldBladePoints.size(); i++) {
+        QVector3D p1 = worldBladePoints[i];
+        QVector3D p2 = worldBladePoints[(i + 1) % worldBladePoints.size()];
+        
+        // Calculate distance from fruit to line segment
+        QVector3D lineDir = p2 - p1;
+        QVector3D fruitToP1 = fruitPos - p1;
+        
+        float lineLengthSq = QVector3D::dotProduct(lineDir, lineDir);
+        float t = 0.0f;
+        
+        if (lineLengthSq > 0.0001f) { // Avoid division by zero
+            t = QVector3D::dotProduct(fruitToP1, lineDir) / lineLengthSq;
+            t = qBound(0.0f, t, 1.0f); // Clamp to line segment
+        }
+        
+        QVector3D closestPoint = p1 + t * lineDir;
+        float distance = (fruitPos - closestPoint).length();
+        
+        if (distance < minDistance) {
+            minDistance = distance;
+        }
+        
+        if (distance <= hitRadius) {
+            isHit = true;
+            break;
+        }
+    }
+    
+    // Debug output
     qDebug() << "=== COLLISION DEBUG ===";
     qDebug() << "Camera point:" << point.x << "," << point.y;
     qDebug() << "Katana position:" << projectedPoint;
     qDebug() << "Fruit position:" << fruitPos;
-    qDebug() << "3D Distance:" << distance3D;
+    qDebug() << "Min distance to blade:" << minDistance;
     qDebug() << "Hit radius:" << hitRadius;
     qDebug() << "Fruit is bomb:" << fruit->isBomb();
     qDebug() << "Fruit is cut:" << fruit->isCut();
-    
-    bool isHit = distance3D <= hitRadius;
     
     if (isHit) {
         qDebug() << "*** COLLISION DÉTECTÉE! ***";
