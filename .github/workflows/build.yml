@@ -32,9 +32,17 @@ jobs:
 
     - name: Install Qt (Ubuntu)
       if: matrix.os == 'ubuntu-22.04'
+      uses: jurplel/install-qt-action@v3
+      with:
+        version: '6.5.3'
+        host: 'linux'
+        target: 'desktop'
+        modules: 'qtmultimedia qtopengl'
+
+    - name: Install dependencies (Ubuntu)
+      if: matrix.os == 'ubuntu-22.04'
       run: |
         sudo apt-get update
-        sudo apt-get install -y qt6-base-dev qt6-multimedia-dev qt6-opengl-dev libqt6openglwidgets6-dev
         sudo apt-get install -y libopencv-dev
         sudo apt-get install -y libglu1-mesa-dev freeglut3-dev mesa-common-dev
         sudo apt-get install -y libasound2-dev libpulse-dev
