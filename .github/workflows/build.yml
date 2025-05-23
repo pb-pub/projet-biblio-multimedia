@@ -51,8 +51,22 @@ jobs:
         cd biblio
         cmake --build build --config Release
 
+    - name: Prepare Release Payload
+      run: |
+        mkdir -p release_payload
+        cp biblio/build/biblio release_payload/biblio
+        # Assuming 'assets' is in 'biblio/assets' relative to the project root
+        cp -r biblio/assets release_payload/assets
+
+    - name: Upload Release Payload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: release-artefacts
+        path: release_payload/
+
   release:
     if: github.event_name == 'release'
+    needs: build # Add dependency on the build job
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -62,6 +76,7 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Install Qt
+      id: install_qt
       uses: jurplel/install-qt-action@v3
       with:
         version: '6.5.3'
@@ -75,40 +90,46 @@ jobs:
         sudo apt-get install -y libopencv-dev
         sudo apt-get install -y libglu1-mesa-dev freeglut3-dev mesa-common-dev
         sudo apt-get install -y libasound2-dev libpulse-dev
-        # Install linuxdeployqt
+        # Install linuxdeployqt to workspace root
         wget -O linuxdeployqt https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage
         chmod +x linuxdeployqt
 
-    - name: Configure CMake
-      run: |
-        cd biblio
-        cmake -B build -DCMAKE_BUILD_TYPE=Release
-
-    - name: Build
-      run: |
-        cd biblio
-        cmake --build build --config Release
+    - name: Download Build Artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: release-artefacts
+        # This will download content to ${{ github.workspace }}/release-artefacts
 
     - name: Package Application
+      env:
+        QT_BIN_DIR: ${{ steps.install_qt.outputs.binPath }}
       run: |
-        cd biblio/build
-        mkdir -p package/biblio
-        cp biblio package/biblio/
-        cp -r assets package/biblio/
-        # Bundle Qt libraries
-        ../linuxdeployqt package/biblio/biblio -bundle-non-qt-libs -no-translations -no-copy-copyright-files
-        # Create launcher script
-        echo '#!/bin/bash' > package/biblio/run.sh
-        echo 'cd "$(dirname "$0")"' >> package/biblio/run.sh
-        echo 'export LD_LIBRARY_PATH="$PWD/lib:$LD_LIBRARY_PATH"' >> package/biblio/run.sh
-        echo './biblio' >> package/biblio/run.sh
-        chmod +x package/biblio/run.sh
-        tar -czf ../biblio-linux.tar.gz -C package .
+        # Current directory: ${{ github.workspace }}
+        # Artifacts are in './release-artefacts/' (e.g. './release-artefacts/biblio', './release-artefacts/assets/')
+        
+        mkdir -p app_package/biblio # Create a directory for packaging
+        cp release-artefacts/biblio app_package/biblio/
+        cp -r release-artefacts/assets app_package/biblio/
+        
+        # linuxdeployqt is at the workspace root (./linuxdeployqt)
+        # Target application is now at app_package/biblio/biblio
+        ./linuxdeployqt app_package/biblio/biblio -qmake="$QT_BIN_DIR/qmake" -bundle-non-qt-libs -no-translations -no-copy-copyright-files
+        
+        # Create launcher script inside app_package/biblio/
+        echo '#!/bin/bash' > app_package/biblio/run.sh
+        echo 'SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)' >> app_package/biblio/run.sh
+        echo 'cd "$SCRIPT_DIR"' >> app_package/biblio/run.sh
+        echo 'export LD_LIBRARY_PATH="./lib:$LD_LIBRARY_PATH"' >> app_package/biblio/run.sh
+        echo './biblio' >> app_package/biblio/run.sh
+        chmod +x app_package/biblio/run.sh
+        
+        # Create tarball in the workspace root from the contents of app_package/
+        tar -czf biblio-linux.tar.gz -C app_package .
 
     - name: Upload Release Assets
       uses: softprops/action-gh-release@v1
       with:
         files: |
-          biblio/biblio-linux.tar.gz
+          biblio-linux.tar.gz # Updated path: tarball is now in the workspace root
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
