@@ -37,7 +37,7 @@ jobs:
         version: '6.5.3'
         host: 'linux'
         target: 'desktop'
-        modules: 'qtmultimedia qtopengl'
+        modules: 'qtmultimedia qtopenglwidgets'
 
     - name: Install dependencies (Ubuntu)
       if: matrix.os == 'ubuntu-22.04'
@@ -55,7 +55,7 @@ jobs:
         host: 'windows'
         target: 'desktop'
         arch: 'win64_msvc2019_64'
-        modules: 'qtmultimedia qtopengl'
+        modules: 'qtmultimedia qtopenglwidgets'
 
     - name: Install OpenCV (Windows)
       if: matrix.os == 'windows-2022'
