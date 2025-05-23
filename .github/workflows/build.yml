@@ -40,6 +40,8 @@ jobs:
         sudo apt-get install -y libopencv-dev
         sudo apt-get install -y libglu1-mesa-dev freeglut3-dev mesa-common-dev
         sudo apt-get install -y libasound2-dev libpulse-dev
+        sudo apt-get install -y libfuse2
+
 
     - name: Configure CMake
       run: |
@@ -90,7 +92,9 @@ jobs:
         sudo apt-get install -y libopencv-dev
         sudo apt-get install -y libglu1-mesa-dev freeglut3-dev mesa-common-dev
         sudo apt-get install -y libasound2-dev libpulse-dev
-        sudo apt-get install -y libfuse2 # Add libfuse2 for AppImage support
+        sudo apt-get install -y libfuse2
+        # Install additional tools for better library bundling
+        sudo apt-get install -y patchelf binutils
         # Install linuxdeployqt to workspace root
         wget -O linuxdeployqt https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage
         chmod +x linuxdeployqt
@@ -99,37 +103,71 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: release-artefacts
-        path: artifact_payload # Use a new, distinct path for downloaded artifact contents
-        # This will download content to ${{ github.workspace }}/artifact_payload
+        path: artifact_payload
 
     - name: Package Application
       env:
         QT_BIN_DIR: ${{ steps.install_qt.outputs.binPath }}
       run: |
-        # Current directory: ${{ github.workspace }}
-        # Artifacts are in './artifact_payload/' (e.g. './artifact_payload/biblio', './artifact_payload/assets/')
+        mkdir -p app_package
+        cp artifact_payload/biblio app_package/biblio 
+        cp -r artifact_payload/assets app_package/assets
         
-        mkdir -p app_package/biblio # Create a directory for packaging
-        cp artifact_payload/biblio app_package/biblio/
-        cp -r artifact_payload/assets app_package/biblio/
-        
-        # linuxdeployqt is at the workspace root (./linuxdeployqt)
-        # Target application is now at app_package/biblio/biblio
-        ./linuxdeployqt app_package/biblio/biblio -qmake="$QT_BIN_DIR/qmake" -bundle-non-qt-libs -no-translations -no-copy-copyright-files
-        
-        echo "--- Listing bundled libraries ---"
-        ls -alh app_package/biblio/lib/
+        # First, check initial dependencies
+        echo "--- Initial dependencies before bundling ---"
+        ldd app_package/biblio
         echo "-------------------------------"
         
-        # Create launcher script inside app_package/biblio/
-        echo '#!/bin/bash' > app_package/biblio/run.sh
-        echo 'SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)' >> app_package/biblio/run.sh
-        echo 'cd "$SCRIPT_DIR"' >> app_package/biblio/run.sh
-        echo 'export LD_LIBRARY_PATH="./lib:$LD_LIBRARY_PATH"' >> app_package/biblio/run.sh
-        echo './biblio' >> app_package/biblio/run.sh
-        chmod +x app_package/biblio/run.sh
+        # Run linuxdeployqt with more aggressive bundling
+        ./linuxdeployqt app_package/biblio -qmake="$QT_BIN_DIR/qmake" -bundle-non-qt-libs -no-translations -no-copy-copyright-files -verbose=2 -always-overwrite
         
-        # Create tarball in the workspace root from the contents of app_package/
+        # Manually copy additional libraries that might not be detected
+        mkdir -p app_package/lib
+        
+        # Copy OpenCV libraries explicitly
+        for lib in $(ldd app_package/biblio | grep opencv | awk '{print $3}'); do
+          if [ -f "$lib" ]; then
+            cp "$lib" app_package/lib/
+            echo "Copied OpenCV library: $lib"
+          fi
+        done
+        
+        # Copy other system libraries that might be missing
+        for lib in $(ldd app_package/biblio | grep -E "(libGL|libglut|libasound|libpulse)" | awk '{print $3}'); do
+          if [ -f "$lib" ] && [ ! -f "app_package/lib/$(basename "$lib")" ]; then
+            cp "$lib" app_package/lib/
+            echo "Copied system library: $lib"
+          fi
+        done
+        
+        # Check dependencies after bundling
+        echo "--- Dependencies after bundling ---"
+        ldd app_package/biblio | grep "not found" || echo "All dependencies found"
+        echo "--- All dependencies ---"
+        ldd app_package/biblio
+        echo "-------------------------------"
+        
+        echo "--- Listing bundled libraries ---"
+        if [ -d "app_package/lib" ]; then
+          ls -alh app_package/lib/
+        else
+          echo "No 'lib' directory created."
+        fi
+        echo "-------------------------------"
+        
+        # Create improved launcher script
+        echo '#!/bin/bash' > app_package/run.sh
+        echo 'SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)' >> app_package/run.sh
+        echo 'cd "$SCRIPT_DIR"' >> app_package/run.sh
+        echo '# Set library path to include bundled libraries' >> app_package/run.sh
+        echo 'export LD_LIBRARY_PATH="./lib:$LD_LIBRARY_PATH"' >> app_package/run.sh
+        echo '# Also set Qt plugin path if Qt plugins are bundled' >> app_package/run.sh
+        echo 'if [ -d "./plugins" ]; then' >> app_package/run.sh
+        echo '  export QT_PLUGIN_PATH="./plugins:$QT_PLUGIN_PATH"' >> app_package/run.sh
+        echo 'fi' >> app_package/run.sh
+        echo './biblio "$@"' >> app_package/run.sh
+        chmod +x app_package/run.sh
+        
         tar -czf biblio-linux.tar.gz -C app_package .
 
     - name: Upload Release Assets
