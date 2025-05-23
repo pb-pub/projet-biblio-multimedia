@@ -117,6 +117,10 @@ jobs:
         # Target application is now at app_package/biblio/biblio
         ./linuxdeployqt app_package/biblio/biblio -qmake="$QT_BIN_DIR/qmake" -bundle-non-qt-libs -no-translations -no-copy-copyright-files
         
+        echo "--- Listing bundled libraries ---"
+        ls -alh app_package/biblio/lib/
+        echo "-------------------------------"
+        
         # Create launcher script inside app_package/biblio/
         echo '#!/bin/bash' > app_package/biblio/run.sh
         echo 'SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)' >> app_package/biblio/run.sh
