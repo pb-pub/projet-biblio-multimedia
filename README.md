@@ -4,7 +4,7 @@
 
 ## Description du Projet
 
-Application de type "Fruit Ninja" développée en C++ avec Qt et OpenGL, intégrant une interaction par webcam pour la détection de gestes. Le joueur doit découper des fruits en 3D en utilisant sa main devant la caméra, tout en évitant les bombes.
+Application de type "Fruit Ninja" développée en C++ avec Qt pour l'interface utilisateur, OpenGL (pipeline fixe) pour le rendu 3D, et OpenCV pour la capture vidéo et la détection gestuelle. Le joueur doit découper des fruits en 3D en utilisant sa main devant la caméra, tout en évitant les bombes.
 
 ## 📦 Téléchargements
 
@@ -50,7 +50,7 @@ cd biblio
 L'application suit un modèle de navigation par fenêtres avec trois interfaces principales :
 
 **Fenêtre Principale (MainWindow) :**
-- Menu d'accueil avec boutons "Nouvelle Partie" et "Paramètres"
+- Menu d'accueil avec boutons "Nouvelle Partie", "Paramètres" et "Ouvrir Rapport PDF"
 - Interface simple et épurée pour la navigation
 - Gestion de la fermeture propre de l'application
 
@@ -59,6 +59,7 @@ L'application suit un modèle de navigation par fenêtres avec trois interfaces 
 - Contrôles de calibration de la caméra
 - Option d'activation/désactivation du seuillage
 - Affichage simultané flux couleur et niveaux de gris
+- Permet de tester la détection du poing avec ou sans seuillage
 
 **Fenêtre de Jeu (GameWindow) :**
 - Zone OpenGL 3D principale (GameWidget) occupant la majorité de l'écran
@@ -104,6 +105,8 @@ L'application suit un modèle de navigation par fenêtres avec trois interfaces 
 - Messages d'erreur pour problèmes de caméra
 
 ## 2. CONCEPTION ET ARCHITECTURE
+
+L'application repose sur le langage C++ et intègre trois technologies principales : Qt pour la gestion de l'interface utilisateur et des événements, OpenGL (avec pipeline fixe) pour le rendu 3D, et OpenCV pour la capture vidéo et la détection gestuelle.
 
 ### Diagramme UML des Classes
 
@@ -175,9 +178,12 @@ L'application suit un modèle de navigation par fenêtres avec trois interfaces 
 ### Relations et Responsabilités
 
 **Patterns Architecturaux Utilisés :**
-- **MVC Adapté** : GameWidget (Controller), Fruit/Cannon (Model), OpenGL rendering (View)
-- **Observer Pattern** : Signaux Qt entre GameWidget et GameWindow pour score/vies
-- **State Pattern** : Gestion états fruits (intact, coupé, tombé)
+- **MVC Adapté** :
+    - Modèle : Classes `Fruit` et `Cannon` (données et logique métier).
+    - Vue : `GameWidget` (rendu 3D OpenGL) et éléments d'interface Qt (fenêtres, boutons, labels).
+    - Contrôleur : `GameWidget` (gestion entrées, mise à jour modèle, déclenchement rendu). `GameWindow` et `SettingsWindow` agissent comme contrôleurs secondaires.
+- **Observer Pattern** : Signaux Qt entre GameWidget et GameWindow pour score/vies. Communication via signaux/slots Qt pour couplage faible et réactivité.
+- **State Pattern** : Gestion états fruits (intact, coupé, tombé).
 - **Factory Pattern** : Création automatique de nouveaux fruits via createFruit()
 
 **Flux de Données Principal :**
@@ -204,25 +210,23 @@ L'application suit un modèle de navigation par fenêtres avec trois interfaces 
 ### ✅ Modules Complètement Opérationnels
 
 **Interface Utilisateur (100%) :**
-- ✅ Navigation fluide entre toutes les fenêtres
-- ✅ Gestion événements Qt (boutons, timers, signaux/slots)
+- ✅ Navigation fluide entre toutes les fenêtres, gestion efficace des événements Qt
 - ✅ Affichage score et vies avec mise à jour temps réel
 - ✅ Dialogue de fin de partie fonctionnel avec options
 
 **Rendu 3D OpenGL (95%) :**
-- ✅ Pipeline OpenGL fixe stable et performant
-- ✅ Chargement et affichage textures multiples (7 textures)
+- ✅ Pipeline OpenGL fixe stable et performant, caméra perspective, éclairage simple
+- ✅ Chargement et affichage textures multiples (7 textures), avec fallback couleurs générées si fichiers manquants
 - ✅ Système de caméra perspective avec gluLookAt
 - ✅ Éclairage Phong avec matériaux configurables
 - ✅ Rendu sol texturé avec grille de référence
 - ✅ Gestion transparence et depth testing
-- ⚠️ Fallback textures couleurs si fichiers manquants
 
 **Gestion Webcam et Détection (85%) :**
-- ✅ Capture vidéo multi-plateforme (AVFoundation macOS, fallback générique)
+- ✅ Capture vidéo multi-plateforme (notamment AVFoundation sur macOS, fallback générique)
 - ✅ Classificateur Haar pour détection de poing robuste
 - ✅ Seuillage OTSU optionnel pour améliorer détection
-- ✅ Gestion permissions caméra avec messages d'erreur explicites
+- ✅ Gestion robuste des permissions caméra avec messages d'erreur explicites
 - ✅ Affichage dual (couleur + niveaux de gris) dans paramètres
 - ✅ Overlay caméra dans jeu toggleable
 
@@ -231,25 +235,25 @@ L'application suit un modèle de navigation par fenêtres avec trois interfaces 
 - ✅ Système de collision 3D précis (sphère-point)
 - ✅ Génération automatique et aléatoire de fruits/bombes
 - ✅ Mécanique de découpe avec vecteurs normaux
-- ✅ Gestion vies et score avec signaux Qt
-- ✅ Sons synchronisés avec actions
+- ✅ Gestion vies et score avec signaux Qt, mise à jour via signaux Qt
+- ✅ Sons de base synchronisés avec actions clés du jeu
 
 ### 🔄 Modules Partiellement Fonctionnels
 
 **Détection Gestuelle Avancée (70%) :**
-- 🔄 Classification poing/main ouverte basique (précision ~75%)
+- 🔄 Classification poing/main ouverte basique (précision ~75%), instable selon conditions lumineuses (pourrait être renforcée avec MediaPipe)
 - 🔄 Sensibilité variable selon conditions d'éclairage
 - 🔄 Détection parfois instable avec arrière-plans complexes
 - ❌ Pas de filtrage temporel pour lisser les faux positifs
 
 **Optimisations Performance (60%) :**
-- 🔄 FPS stable à 60 avec <10 fruits simultanés
+- 🔄 FPS stable à 60 avec <10 fruits simultanés; performances acceptables mais absence d'optimisations (ex: culling, mise en cache des textures caméra) limite l'efficacité
 - 🔄 Gestion mémoire sans fuites majeures détectées
 - ❌ Pas de culling pour objets hors champ
-- ❌ Rechargement textures à chaque frame caméra (inefficace)
+- ❌ Rechargement textures caméra à chaque frame (inefficace)
 
 **Audio et Feedback (80%) :**
-- 🔄 Sons de base fonctionnels mais volume parfois inconsistant
+- 🔄 Sons de base fonctionnels mais volume parfois irrégulier
 - 🔄 Chargement conditionnel avec vérifications
 - ❌ Pas d'audio 3D spatialisé
 - ❌ Pas de musique d'ambiance
@@ -277,19 +281,19 @@ L'application suit un modèle de navigation par fenêtres avec trois interfaces 
 
 **Critiques (bloquants) :**
 1. **Permissions Caméra macOS** : Application crash si permission refusée
-   - *Solution implémentée* : Détection status + dialogue explicatif
+   - *Solution implémentée* : Détection status + dialogue explicatif. (Développement macOS a soulevé défis : gestion permissions via Info.plist, messages utilisateur, usage AVFoundation, vigilance mise à l’échelle écrans Retina).
 2. **Textures Manquantes** : Crash si fichiers assets non trouvés
-   - *Solution implémentée* : Fallback vers textures couleurs générées
+   - *Solution implémentée* : Fallback vers textures couleurs générées.
 
 **Majeurs (impactants) :**
-3. **Performance Caméra** : Conversion BGR→RGB à chaque frame
-   - *Solution prévue* : Cache texture + update conditionnel
-4. **Projection Cylindrique** : Mapping parfois imprécis aux bords
-   - *Solution* : Ajustement algorithme avec zones mortes
+3. **Performance Caméra** : Conversion BGR→RGB à chaque frame (affecte performances).
+   - *Solution prévue* : Cache texture + update conditionnel.
+4. **Projection Cylindrique** : Mapping parfois imprécis aux bords en périphérie.
+   - *Solution* : Ajustement algorithme avec zones mortes.
 
 **Mineurs (cosmétiques) :**
-5. **Interface Redimensionnement** : HUD parfois mal positionné
-6. **Debug Console** : Messages de debug trop verbeux en production
+5. **Interface Redimensionnement** : HUD parfois mal positionné, l'interface peut mal se redimensionner.
+6. **Debug Console** : Messages de debug trop verbeux en production, non filtrés.
 
 ### Métriques de Performance Mesurées
 
