@@ -1,4 +1,4 @@
-#ifdef _APPLE_
+#ifdef __APPLE__
 #include <OpenGL/glu.h>
 #else
 #include <GL/glu.h>
@@ -25,10 +25,10 @@ const float MAX_DIMENSION = 33.0f;
 
 GameWidget::GameWidget(QWidget *parent)
     : QWidget(parent), ui(new Ui::GameWidget), m_fruit(std::vector<Fruit *>()), m_cameraTextureId(0) // Initialize camera texture ID
-      ,
-      m_sliceSound(new QSoundEffect(this)) // Initialize sound effect
-      ,
-      m_shootSound(new QSoundEffect(this)) // Initialize bomb sound
+    ,
+    m_sliceSound(new QSoundEffect(this)) // Initialize sound effect
+    ,
+    m_shootSound(new QSoundEffect(this)) // Initialize bomb sound
 {
     ui->setupUi(this);
     displayCamera = true;            // Enable camera display for demonstration
@@ -131,6 +131,11 @@ GameWidget::~GameWidget()
     }
 
     delete cameraHandler;
+
+    if (m_katana) {
+        delete m_katana;
+        m_katana = nullptr;
+    }
 }
 
 void GameWidget::updateFruitDisplay()
@@ -193,15 +198,15 @@ void GameWidget::initializeTextures()
 
     // Try multiple possible texture locations
     QStringList possibleBasePaths = {
-        appDir.absolutePath() + "/../../../biblio/assets/textures/",
-        // Relative to current directory
-        "./assets/textures/",
-        // Try going up directories
-        "../assets/textures/",
-        "../../assets/textures/",
-        "../../../assets/textures/",
-        // Absolute path 
-        "/Users/ismail/projet-biblio-multimedia/biblio/assets/textures/"};
+                                     appDir.absolutePath() + "/../../../biblio/assets/textures/",
+                                     // Relative to current directory
+                                     "./assets/textures/",
+                                     // Try going up directories
+                                     "../assets/textures/",
+                                     "../../assets/textures/",
+                                     "../../../assets/textures/",
+                                     // Absolute path
+                                     "/Users/ismail/projet-biblio-multimedia/biblio/assets/textures/"};
 
     QString base_path;
     bool foundPath = false;
@@ -355,17 +360,17 @@ void GameWidget::startCountdown(int seconds)
     QTimer *countdownTimer = new QTimer(this);
     connect(countdownTimer, &QTimer::timeout, [this, countdownTimer, seconds]() mutable
             {
-        if (seconds > 0) {
-            label->setText(QString::number(seconds));
-            seconds--;
-        } else {
-            countdownTimer->stop();
-            delete countdownTimer;
-            delete label; // Delete the label after countdown
+                if (seconds > 0) {
+                    label->setText(QString::number(seconds));
+                    seconds--;
+                } else {
+                    countdownTimer->stop();
+                    delete countdownTimer;
+                    delete label; // Delete the label after countdown
 
-            // Use the new createFruit function instead of direct creation
-            createFruit();
-        } });
+                    // Use the new createFruit function instead of direct creation
+                    createFruit();
+                } });
     countdownTimer->start(1000); // Update every second
 }
 
@@ -398,7 +403,7 @@ void GameWidget::paintGL()
 
     // Set camera position with better positioning for perspective view
     gluLookAt(0.0f, 1.8f, -1.f,  // Eye position
-                                 // gluLookAt(2.0f, 1.8f, 20.f,        // testing eye position
+              // gluLookAt(2.0f, 1.8f, 20.f,        // testing eye position
               0.0f, 1.0f, 25.0f, // Look at position (center)
               0.0f, 1.0f, 0.0f); // Up vector
 
@@ -421,8 +426,8 @@ void GameWidget::paintGL()
     glPushMatrix();
 
     // Set material properties for the floor - adjust for texture
-    GLfloat floor_ambient[] = {0.7f, 0.7f, 0.7f, 1.0f}; 
-    GLfloat floor_diffuse[] = {1.0f, 1.0f, 1.0f, 1.0f};  
+    GLfloat floor_ambient[] = {0.7f, 0.7f, 0.7f, 1.0f};
+    GLfloat floor_diffuse[] = {1.0f, 1.0f, 1.0f, 1.0f};
     GLfloat floor_specular[] = {0.2f, 0.2f, 0.2f, 1.0f};
     glMaterialfv(GL_FRONT, GL_AMBIENT, floor_ambient);
     glMaterialfv(GL_FRONT, GL_DIFFUSE, floor_diffuse);
@@ -436,11 +441,11 @@ void GameWidget::paintGL()
 
     // Draw the main ground plane with texture
     glBegin(GL_QUADS);
-    glNormal3f(0.0f, 1.0f, 0.0f); 
+    glNormal3f(0.0f, 1.0f, 0.0f);
 
-    const float textureRepetition = 20.0f; 
+    const float textureRepetition = 20.0f;
 
-    // Add texture coordinates to the ground quad 
+    // Add texture coordinates to the ground quad
     glTexCoord2f(0.0f, 0.0f);
     glVertex3f(-MAX_DIMENSION, 0.0f, -MAX_DIMENSION);
     glTexCoord2f(textureRepetition, 0.0f);
@@ -504,28 +509,27 @@ void GameWidget::paintGL()
         }
     }
 
-    // Draw a small ball at the projected point if it exists
-    if (hasProjectedPoint)
-    {
+    // Draw a katana at the projected point if it exists
+    if (hasProjectedPoint) {
+        if (!m_katana) {
+            m_katana = new Katana();
+        }
+        
+        // Sauvegarder l'état de la matrice
         glPushMatrix();
-
-        // Set material for the ball (bright red)
-        GLfloat ball_ambient[] = {0.5f, 0.0f, 0.0f, 1.0f};
-        GLfloat ball_diffuse[] = {1.0f, 0.0f, 0.0f, 1.0f};
-        GLfloat ball_specular[] = {1.0f, 0.5f, 0.5f, 1.0f};
-        glMaterialfv(GL_FRONT, GL_AMBIENT, ball_ambient);
-        glMaterialfv(GL_FRONT, GL_DIFFUSE, ball_diffuse);
-        glMaterialfv(GL_FRONT, GL_SPECULAR, ball_specular);
-        glMaterialf(GL_FRONT, GL_SHININESS, 50.0f);
-
-        // Move to the projected point
-        glTranslatef(projectedPoint.x(), projectedPoint.y(), projectedPoint.z());
-
-        GLUquadric *ball = gluNewQuadric();
-        gluQuadricDrawStyle(ball, GLU_FILL);
-        gluSphere(ball, 0.05f, 16, 16);
-        gluDeleteQuadric(ball);
-
+        
+        // Réinitialiser les transformations
+        glLoadIdentity();
+        
+        // Appliquer la même vue caméra que pour le reste de la scène
+        gluLookAt(0.0f, 1.8f, -1.f,  // Eye position
+                  0.0f, 1.0f, 25.0f,  // Look at position
+                  0.0f, 1.0f, 0.0f);  // Up vector
+        
+        // Dessiner le katana
+        m_katana->draw(projectedPoint);
+        
+        // Restaurer l'état de la matrice
         glPopMatrix();
     }
 
@@ -615,61 +619,24 @@ void GameWidget::initializeCamera()
     }
 }
 
-void GameWidget::updateFrame()
-{
-    if (!cameraInitialized || !cameraHandler->isOpened())
-    {
+void GameWidget::updateFrame() {
+    if (!cameraInitialized || !cameraHandler->isOpened()) {
         return;
     }
 
     // Get new frame from camera
-    if (cameraHandler->getFrame(currentFrame))
-    {
-        // Convert to grayscale for face detection
+    if (cameraHandler->getFrame(currentFrame)) {
         cv::cvtColor(currentFrame, grayFrame, cv::COLOR_BGR2GRAY);
-
-        // Detect faces
         std::vector<cv::Point> detectedPoints = cameraHandler->detectFaces(currentFrame, grayFrame, false);
 
-        // Check if any detected point intersects with fruits
-        QTime currentTime = QTime::currentTime();
+        // S'assurer que hasProjectedPoint est mis à false si aucun point n'est détecté
+        hasProjectedPoint = false;
 
-        for (const auto &point : detectedPoints)
-        {
-
-            for (auto fruit : m_fruit)
-            {
-                if (!fruit->isCut() && isFruitHit(point, fruit, currentTime))
-                {
-                    QVector3D fruitCenter = fruit->getPosition(currentTime);
-
-                    // random cut normal
-                    float nx = (rand() % 200 - 100) / 100.0f;
-                    float ny = (rand() % 200 - 100) / 100.0f;
-                    float nz = 0.f;
-                    QVector3D cutNormal(nx, ny, nz);
-                    if (cutNormal.lengthSquared() < 0.01f)
-                    {
-                        cutNormal = QVector3D(1.0f, 0.0f, 0.0f);
-                    }
-                    cutNormal.normalize();
-
-                    fruit->cut(fruitCenter, cutNormal, currentTime);
-
-                    if (fruit->isBomb())
-                    {
-                        emit lifeDecrease();
-                    }
-                    else
-                    {
-                        emit scoreIncreased();
-                        if (m_sliceSound->isLoaded())
-                        {
-                            m_sliceSound->play();
-                        }
-                    }
-                }
-            }
+        for (const auto &point : detectedPoints) {
+            float gameX, gameZ;
+            convertCameraPointToGameSpace(point, gameX, gameZ);
+            hasProjectedPoint = true; // Mettre à true quand un point est détecté et converti
+            // Le reste du code...
         }
 
         update();
@@ -708,14 +675,35 @@ bool GameWidget::isFruitHit(const cv::Point &point, Fruit *fruit, QTime currentT
     // Get fruit position
     QVector3D fruitPos = fruit->getPosition(currentTime);
 
-    // Calculate distance in 3D space using the projected point
-    float dx = projectedPoint.x() - fruitPos.x();
-    float dy = projectedPoint.y() - fruitPos.y();
-    float dz = projectedPoint.z() - fruitPos.z();
-    float distance = sqrt(dx * dx + dy * dy + dz * dz);
+    // Position de la lame du katana avec une hitbox plus grande
+    float bladeTipY = projectedPoint.y() + 2.5f;    // Augmenté pour une meilleure portée verticale
+    float bladeBaseY = projectedPoint.y() - 0.8f;   // Augmenté pour une meilleure portée vers le bas
 
-    // Check if distance is less than combined radii (0.5 for fruit + 0.15 for ball = 0.65)
-    return distance < 0.65f && fruitPos.y() > 0.5f; // Only count hits when fruit is above ground
+    // Distance horizontale entre le fruit et la lame
+    float dx = projectedPoint.x() - fruitPos.x();
+    float dz = projectedPoint.z() - fruitPos.z();
+    float horizontalDist = sqrt(dx * dx + dz * dz);
+
+    // Zone de détection verticale plus généreuse
+    bool isInBladeHeight = fruitPos.y() >= (bladeBaseY - 0.8f) && fruitPos.y() <= (bladeTipY + 0.8f);
+    
+    // Hitbox horizontale beaucoup plus large
+    float hitboxRadius = 2.0f;  // Augmenté significativement
+
+    // Debug des positions
+    qDebug() << "Fruit position:" << fruitPos;
+    qDebug() << "Katana position:" << projectedPoint;
+    qDebug() << "Distance:" << horizontalDist;
+    qDebug() << "Height check:" << isInBladeHeight;
+
+    // Vérification de la collision avec conditions plus souples
+    bool isHit = isInBladeHeight && horizontalDist < hitboxRadius && fruitPos.y() > 0.1f;
+    
+    if (isHit) {
+        qDebug() << "HIT!";
+    }
+
+    return isHit;
 }
 
 void GameWidget::keyPressEvent(QKeyEvent *event)

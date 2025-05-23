@@ -8,7 +8,7 @@
 #define GAMEWIDGET_H
 
 #include <QWidget>
-#include <QOpenGLWidget> 
+#include <QOpenGLWidget>
 #include "fruit.h"
 #include <qlabel.h>
 #include <vector>
@@ -20,16 +20,17 @@
 #include <QSoundEffect>
 #include "camerahandler.h"
 #include "cannon.h"
-#include <QKeyEvent> 
-#include <QTime>   
-#include <QVector3D> 
+#include <QKeyEvent>
+#include <QTime>
+#include <QVector3D>
 #include <opencv2/opencv.hpp>
+#include "katana.h"
 
 typedef struct GLUquadric GLUquadric;
 
 namespace Ui
 {
-    class GameWidget;
+class GameWidget;
 }
 
 /**
@@ -120,7 +121,7 @@ public slots:
     void updateFrame();
 
 private:
-    Ui::GameWidget *ui; 
+    Ui::GameWidget *ui;
     std::vector<Fruit *> m_fruit; ///< Conteneur pour tous les objets Fruit actifs dans le jeu.
     GLuint *textures; ///< Tableau d'identifiants de texture OpenGL.
     QFont m_font; ///< Police de caractères utilisée pour afficher du texte (ex: score, messages).
@@ -138,6 +139,7 @@ private:
     Cannon cannon; ///< Objet représentant le canon du joueur.
     bool displayCamera; ///< Indicateur pour afficher ou non le flux de la caméra à l'écran.
     GLuint m_cameraTextureId; ///< Identifiant de texture OpenGL pour le flux vidéo de la caméra.
+    Katana* m_katana = nullptr; ///< Objet représentant le katana du joueur.
 
     /**
      * @brief Gère les événements de pression de touche.
@@ -178,7 +180,7 @@ private:
     bool isFruitHit(const cv::Point &point, Fruit *fruit, QTime currentTime);
 
     /**
-     * @brief Convertit un point de l'espace caméra 2D en coordonnées de l'espace de jeu 3D 
+     * @brief Convertit un point de l'espace caméra 2D en coordonnées de l'espace de jeu 3D
      * en le mappant sur le cylindre entourant le joueur.
      * @param cameraPoint Coordonnées 2D du point dans l'image de la caméra.
      * @param gameX Référence pour stocker la coordonnée X résultante dans l'espace de jeu. (paramètre de sortie)

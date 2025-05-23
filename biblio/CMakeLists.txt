@@ -38,6 +38,8 @@ qt_add_executable(biblio
     settingswindow.h settingswindow.cpp settingswindow.ui
     haarcascade_frontalface_alt.xml
     assets/haarcascade_frontalface_alt.xml
+    katana.cpp
+    katana.h
 )
 
 # Copy assets to build directory
