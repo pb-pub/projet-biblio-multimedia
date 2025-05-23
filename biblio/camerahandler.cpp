@@ -18,17 +18,34 @@ CameraHandler::~CameraHandler()
 
 bool CameraHandler::loadFaceCascade()
 {
-    QString cascadePath = "/Users/ismail/projet-biblio-multimedia/biblio/assets/fist.xml";
-    if (!faceCascade.load(cascadePath.toStdString()))
-    {
-        cascadePath = "./../../../biblio/assets/fist.xml";
-        if (!faceCascade.load(cascadePath.toStdString()))
-        {
-            qDebug() << "Error: Could not load Haar Cascade from" << cascadePath;
-            return false;
-        }
-    }
-    return true;
+    QString cascadePath = "/Users/ismail/projet-biblio-multimedia/biblio/assets/fist.xml"; // User-specific absolute path
+    if (faceCascade.load(cascadePath.toStdString())) return true;
+
+    cascadePath = "./../../../biblio/assets/fist.xml"; // Relative path for specific build structure
+    if (faceCascade.load(cascadePath.toStdString())) return true;
+
+    cascadePath = "../biblio/assets/fist.xml"; // Common relative path
+    if (faceCascade.load(cascadePath.toStdString())) return true;
+
+    cascadePath = "../../biblio/assets/fist.xml"; // Another common relative path
+    if (faceCascade.load(cascadePath.toStdString())) return true;
+    
+    cascadePath = "assets/fist.xml"; // Relative to executable, if assets is a sibling
+    if (faceCascade.load(cascadePath.toStdString())) return true;
+
+    cascadePath = "../assets/fist.xml"; // Relative to executable, if assets is in parent
+    if (faceCascade.load(cascadePath.toStdString())) return true;
+
+    // Path relative to where the executable might be run from within the project structure
+    cascadePath = "biblio/assets/fist.xml";
+    if (faceCascade.load(cascadePath.toStdString())) return true;
+
+    // Final attempt with a more general relative path if others fail
+    cascadePath = "fist.xml"; // Assuming it might be in the same directory as the executable
+    if (faceCascade.load(cascadePath.toStdString())) return true;
+
+    qDebug() << "Error: Could not load Haar Cascade from multiple attempted paths, last tried:" << cascadePath;
+    return false;
 }
 
 int CameraHandler::openCamera()
