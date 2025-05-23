@@ -51,8 +51,42 @@ jobs:
         cd biblio
         cmake --build build --config Release
 
-    - name: Package Application (Ubuntu)
-      if: matrix.os == 'ubuntu-22.04'
+  release:
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v3
+      with:
+        version: '6.5.3'
+        host: 'linux'
+        target: 'desktop'
+        modules: 'qtmultimedia'
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libopencv-dev
+        sudo apt-get install -y libglu1-mesa-dev freeglut3-dev mesa-common-dev
+        sudo apt-get install -y libasound2-dev libpulse-dev
+
+    - name: Configure CMake
+      run: |
+        cd biblio
+        cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+    - name: Build
+      run: |
+        cd biblio
+        cmake --build build --config Release
+
+    - name: Package Application
       run: |
         cd biblio/build
         mkdir -p package/biblio
@@ -65,30 +99,10 @@ jobs:
         chmod +x package/biblio/run.sh
         tar -czf ../biblio-linux.tar.gz -C package .
 
-    - name: Upload Artifacts (Ubuntu)
-      if: matrix.os == 'ubuntu-22.04'
-      uses: actions/upload-artifact@v4
-      with:
-        name: ${{ matrix.artifact_name }}
-        path: biblio/biblio-linux.tar.gz
-
-  release:
-    if: github.event_name == 'release'
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    
-    steps:
-    - name: Download all artifacts
-      uses: actions/download-artifact@v4
-      with:
-        path: artifacts
-
     - name: Upload Release Assets
       uses: softprops/action-gh-release@v1
       with:
         files: |
-          artifacts/biblio-linux/biblio-linux.tar.gz
+          biblio/biblio-linux.tar.gz
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
