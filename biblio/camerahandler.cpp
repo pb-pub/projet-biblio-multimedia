@@ -2,6 +2,9 @@
 #include <QDebug>
 #include <iostream>
 #include <vector>
+#include <QCoreApplication>
+#include <QDir>
+#include <QStandardPaths>
 
 CameraHandler::CameraHandler()
 {
@@ -18,33 +21,55 @@ CameraHandler::~CameraHandler()
 
 bool CameraHandler::loadFaceCascade()
 {
-    QString cascadePath = "/Users/ismail/projet-biblio-multimedia/biblio/assets/fist.xml"; // User-specific absolute path
-    if (faceCascade.load(cascadePath.toStdString())) return true;
+    QStringList pathsToTry;
+    QString appDir = QCoreApplication::applicationDirPath();
 
-    cascadePath = "./../../../biblio/assets/fist.xml"; // Relative path for specific build structure
-    if (faceCascade.load(cascadePath.toStdString())) return true;
-
-    cascadePath = "../biblio/assets/fist.xml"; // Common relative path
-    if (faceCascade.load(cascadePath.toStdString())) return true;
-
-    cascadePath = "../../biblio/assets/fist.xml"; // Another common relative path
-    if (faceCascade.load(cascadePath.toStdString())) return true;
+    // Path for macOS bundle (assets inside Resources folder)
+    pathsToTry << appDir + "/../Resources/assets/fist.xml";
+    // Path if assets folder is next to the executable
+    pathsToTry << appDir + "/assets/fist.xml";
     
-    cascadePath = "assets/fist.xml"; // Relative to executable, if assets is a sibling
-    if (faceCascade.load(cascadePath.toStdString())) return true;
+    // Paths relative to current working directory (useful for development/build dir execution)
+    pathsToTry << "assets/fist.xml";
+    pathsToTry << "../assets/fist.xml"; // If executable is in a subfolder like 'bin'
+    pathsToTry << "../../assets/fist.xml";
+    pathsToTry << "biblio/assets/fist.xml"; // If running from project root and executable is in biblio/
+    pathsToTry << "../biblio/assets/fist.xml";
+    pathsToTry << "../../biblio/assets/fist.xml";
+    pathsToTry << "./../../../biblio/assets/fist.xml";
 
-    cascadePath = "../assets/fist.xml"; // Relative to executable, if assets is in parent
-    if (faceCascade.load(cascadePath.toStdString())) return true;
+    // Path for when fist.xml is in the same directory as the executable (less likely for 'assets' structure)
+    pathsToTry << appDir + "/fist.xml";
+    pathsToTry << "fist.xml";
 
-    // Path relative to where the executable might be run from within the project structure
-    cascadePath = "biblio/assets/fist.xml";
-    if (faceCascade.load(cascadePath.toStdString())) return true;
 
-    // Final attempt with a more general relative path if others fail
-    cascadePath = "fist.xml"; // Assuming it might be in the same directory as the executable
-    if (faceCascade.load(cascadePath.toStdString())) return true;
+    for (const QString& cascadePath : pathsToTry) {
+        QFileInfo fileInfo(cascadePath);
+        qDebug() << "Attempting to load Haar Cascade from:" << QDir::cleanPath(fileInfo.absoluteFilePath());
+        if (faceCascade.load(QDir::cleanPath(fileInfo.absoluteFilePath()).toStdString())) {
+            qDebug() << "Successfully loaded Haar Cascade from:" << QDir::cleanPath(fileInfo.absoluteFilePath());
+            return true;
+        }
+    }
+    
+    // Attempt to locate via Qt Resource system if it were used (example, not active here)
+    // pathsToTry << ":/assets/fist.xml";
 
-    qDebug() << "Error: Could not load Haar Cascade from multiple attempted paths, last tried:" << cascadePath;
+    // Final attempt with a path that might be set via an environment variable or a known install location
+    // This part would be specific to deployment strategy if assets are installed system-wide
+    // For example, using QStandardPaths:
+    QString dataLocation = QStandardPaths::locate(QStandardPaths::AppDataLocation, "assets/fist.xml");
+    if (!dataLocation.isEmpty()) {
+         qDebug() << "Attempting to load Haar Cascade from AppDataLocation:" << dataLocation;
+        if (faceCascade.load(dataLocation.toStdString())) {
+            qDebug() << "Successfully loaded Haar Cascade from AppDataLocation:" << dataLocation;
+            return true;
+        }
+    }
+
+
+    qDebug() << "Error: Could not load Haar Cascade ('fist.xml'). All attempted paths failed.";
+    qDebug() << "Ensure 'fist.xml' is present in one of the expected 'assets' directory locations relative to the executable or build directory.";
     return false;
 }
 

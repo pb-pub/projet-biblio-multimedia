@@ -1,45 +1,42 @@
 # Projet Bibliothèque Multimédia - Jeu 3D avec Interaction WebCam
 
+![Build Status](https://github.com/username/projet-biblio-multimedia/workflows/Build%20Executables/badge.svg)
+
 ## Description du Projet
 
 Application de type "Fruit Ninja" développée en C++ avec Qt et OpenGL, intégrant une interaction par webcam pour la détection de gestes. Le joueur doit découper des fruits en 3D en utilisant sa main devant la caméra, tout en évitant les bombes.
 
-## Structure du Projet
+## 📦 Téléchargements
 
-```
-projet-biblio-multimedia/
-├── biblio/                    # Code source principal
-│   ├── main.cpp              # Point d'entrée de l'application
-│   ├── mainwindow.cpp/h      # Fenêtre principale (menu)
-│   ├── gamewindow.cpp/h      # Fenêtre de jeu
-│   ├── settingswindow.cpp/h  # Fenêtre des paramètres
-│   ├── gamewidget.cpp/h      # Widget OpenGL principal du jeu
-│   ├── camerawidget.cpp/h    # Widget d'affichage caméra
-│   ├── camerahandler.cpp/h   # Gestionnaire de caméra et détection
-│   ├── gameoverdialog.cpp/h  # Dialogue de fin de partie
-│   ├── fruit.cpp/h           # Classe des objets fruits/bombes
-│   ├── cannon.cpp/h          # Classe du canon lanceur
-│   └── assets/               # Ressources (textures, sons, modèles)
-│       ├── textures/         # Textures des fruits et environnement
-│       ├── sounds/           # Effets sonores
-│       └── fist.xml          # Classificateur Haar pour détection de poing
-├── build/                    # Fichiers de compilation
-└── docs/                     # Documentation
-```
+### Versions Pré-compilées
 
-## Compilation et Exécution
+Les exécutables sont automatiquement générés via GitHub Actions pour chaque release :
 
-### Prérequis
-- Qt 5.x ou 6.x
-- OpenCV 4.x
-- OpenGL 3.x
-- Compilateur C++17 (GCC/Clang/MSVC)
+- **🐧 Linux** : `biblio-linux.tar.gz` - Compatible Ubuntu 22.04+
+- **🪟 Windows** : `biblio-windows.zip` - Compatible Windows 10/11 (x64)
+- **🍎 macOS** : `biblio-macos.dmg` - Compatible macOS 13+ (Intel/Apple Silicon)
 
-### Instructions de compilation
+👉 [**Télécharger la dernière version**](https://github.com/username/projet-biblio-multimedia/releases/latest)
+
+### Installation Rapide
+
+**Linux :**
 ```bash
-qmake biblio.pro
-make
-./biblio
+tar -xzf biblio-linux.tar.gz
+cd biblio
+./run.sh
+```
+
+**Windows :**
+```bash
+# Extraire biblio-windows.zip
+# Double-cliquer sur biblio.exe
+```
+
+**macOS :**
+```bash
+# Monter biblio-macos.dmg
+# Glisser biblio.app vers Applications
 ```
 
 ---
