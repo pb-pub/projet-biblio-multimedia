@@ -702,10 +702,22 @@ void GameWidget::updateFrame() {
                 // Only check collision for fruits that are not already cut
                 if (!fruit->isCut()) {
                     if (isFruitHit(point, fruit, currentTime)) {
-                        // Cut the fruit using the katana position and direction
-                        QVector3D katanaPos = projectedPoint;
-                        QVector3D normalVector(0.0f, 0.0f, 1.0f); // Simple normal for cutting plane
-                        fruit->cut(katanaPos, normalVector, currentTime);
+                        // Calculer un vecteur normal de coupe réaliste basé sur la direction du katana
+                        QVector3D fruitPos = fruit->getPosition(currentTime);
+                        QVector3D katanaToFruit = (fruitPos - projectedPoint).normalized();
+                        
+                        // Créer un vecteur normal de coupe qui dépend de la direction relative
+                        QVector3D normalVector;
+                        if (katanaToFruit.length() > 0.1f) {
+                            // Utiliser une direction de coupe perpendiculaire au mouvement
+                            normalVector = QVector3D(-katanaToFruit.z(), 0.2f, katanaToFruit.x()).normalized();
+                        } else {
+                            // Fallback vers un vecteur normal par défaut
+                            normalVector = QVector3D(1.0f, 0.2f, 0.0f).normalized();
+                        }
+                        
+                        // Cut the fruit using the calculated normal
+                        fruit->cut(projectedPoint, normalVector, currentTime);
                         
                         // Play sound and emit signal based on fruit type
                         if (fruit->isBomb()) {
@@ -718,7 +730,7 @@ void GameWidget::updateFrame() {
                             emit scoreIncreased();
                         }
                         
-                        qDebug() << "Fruit successfully cut!";
+                        qDebug() << "Fruit successfully cut with normal:" << normalVector;
                         break; // Une fois qu'un fruit est touché, on sort de la boucle
                     }
                 } else {
