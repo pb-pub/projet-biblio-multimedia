@@ -61,7 +61,10 @@ jobs:
       if: matrix.os == 'windows-2022'
       run: |
         vcpkg install opencv:x64-windows
+        vcpkg install opengl:x64-windows
+        vcpkg install freeglut:x64-windows
         echo "CMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake" >> $GITHUB_ENV
+        echo "VCPKG_TARGET_TRIPLET=x64-windows" >> $GITHUB_ENV
       shell: bash
 
     - name: Install Qt (macOS)
@@ -70,6 +73,42 @@ jobs:
         brew install qt@6
         brew install opencv
         echo "CMAKE_PREFIX_PATH=$(brew --prefix qt@6)" >> $GITHUB_ENV
+
+    - name: Fix Windows Headers (Windows)
+      if: matrix.os == 'windows-2022'
+      run: |
+        # Create a wrapper header to fix GL conflicts
+        mkdir -p biblio/include
+        cat > biblio/include/gl_fix.h << 'EOF'
+        #ifndef GL_FIX_H
+        #define GL_FIX_H
+        #ifdef _WIN32
+        #ifndef WIN32_LEAN_AND_MEAN
+        #define WIN32_LEAN_AND_MEAN
+        #endif
+        #include <windows.h>
+        #endif
+        #include <GL/gl.h>
+        #endif
+        EOF
+        
+        # Create Windows socket wrapper
+        cat > biblio/include/socket_fix.h << 'EOF'
+        #ifndef SOCKET_FIX_H
+        #define SOCKET_FIX_H
+        #ifdef _WIN32
+        #include <winsock2.h>
+        #include <ws2tcpip.h>
+        #pragma comment(lib, "ws2_32.lib")
+        #else
+        #include <sys/socket.h>
+        #include <netinet/in.h>
+        #include <arpa/inet.h>
+        #include <unistd.h>
+        #endif
+        #endif
+        EOF
+      shell: bash
 
     - name: Configure CMake (Ubuntu/macOS)
       if: matrix.os != 'windows-2022'
@@ -81,7 +120,7 @@ jobs:
       if: matrix.os == 'windows-2022'
       run: |
         cd biblio
-        cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake
+        cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x64-windows -DCMAKE_INCLUDE_PATH="./include"
       shell: bash
 
     - name: Build
