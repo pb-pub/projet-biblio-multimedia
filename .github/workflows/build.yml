@@ -99,19 +99,19 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: release-artefacts
-        path: release-artefacts # Download into a subdirectory named 'release-artefacts'
-        # This will download content to ${{ github.workspace }}/release-artefacts
+        path: artifact_payload # Use a new, distinct path for downloaded artifact contents
+        # This will download content to ${{ github.workspace }}/artifact_payload
 
     - name: Package Application
       env:
         QT_BIN_DIR: ${{ steps.install_qt.outputs.binPath }}
       run: |
         # Current directory: ${{ github.workspace }}
-        # Artifacts are in './release-artefacts/' (e.g. './release-artefacts/biblio', './release-artefacts/assets/')
+        # Artifacts are in './artifact_payload/' (e.g. './artifact_payload/biblio', './artifact_payload/assets/')
         
         mkdir -p app_package/biblio # Create a directory for packaging
-        cp release-artefacts/biblio app_package/biblio/
-        cp -r release-artefacts/assets app_package/biblio/
+        cp artifact_payload/biblio app_package/biblio/
+        cp -r artifact_payload/assets app_package/biblio/
         
         # linuxdeployqt is at the workspace root (./linuxdeployqt)
         # Target application is now at app_package/biblio/biblio
