@@ -95,12 +95,44 @@ GameWidget::GameWidget(QWidget *parent)
     initializeCamera();
 
     // Initialize sounds
-    QString soundBasePath = QCoreApplication::applicationDirPath() + "/../../../biblio/assets/sounds/";
-    m_sliceSound->setSource(QUrl::fromLocalFile(soundBasePath + "fruit_slice.wav"));
-    m_sliceSound->setVolume(1.f);
+    QStringList possibleSoundPaths = {
+        QCoreApplication::applicationDirPath() + "/../../../biblio/assets/sounds/",
+        "./assets/sounds/",
+        "../assets/sounds/",
+        "../../assets/sounds/",
+        "../../../assets/sounds/"
+    };
 
-    m_shootSound->setSource(QUrl::fromLocalFile(soundBasePath + "cannon-shot.wav"));
-    m_shootSound->setVolume(1.f);
+    QString soundBasePath;
+    bool foundSoundPath = false;
+
+    for (const auto &path : possibleSoundPaths) {
+        QDir dir(path);
+        if (dir.exists("fruit_slice.wav") && dir.exists("cannon-shot.wav")) {
+            soundBasePath = path;
+            foundSoundPath = true;
+            qDebug() << "Found sound path: " << soundBasePath;
+            break;
+        }
+    }
+
+    if (!foundSoundPath) {
+        qCritical() << "Cannot find sound directory. Tried paths:";
+        for (const auto &path : possibleSoundPaths) {
+            qCritical() << " - " << path;
+        }
+        // Fallback or error handling if sounds are critical
+    }
+
+    if (foundSoundPath) {
+        m_sliceSound->setSource(QUrl::fromLocalFile(soundBasePath + "fruit_slice.wav"));
+        m_sliceSound->setVolume(1.f);
+
+        m_shootSound->setSource(QUrl::fromLocalFile(soundBasePath + "cannon-shot.wav"));
+        m_shootSound->setVolume(1.f);
+    } else {
+        qWarning() << "Sound files not found. Sounds will not play.";
+    }
 }
 
 GameWidget::~GameWidget()
