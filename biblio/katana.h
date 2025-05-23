@@ -1,7 +1,7 @@
 /**
  * @file katana.h
  * @brief Déclaration de la classe Katana.
- * @author Boutet Paul, El Gote Ismaïl // Assuming same authors, adjust if not
+ * @author Boutet Paul, El Gote Ismaïl 
  */
 
 #ifndef KATANA_H

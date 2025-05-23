@@ -7,6 +7,10 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QPainter> // Added for paintEvent
+#include <QStyleOption> // Added for paintEvent
+#include <QStyle> // Added for paintEvent
+#include <QFontDatabase> // Added for custom font
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -39,6 +43,13 @@ public:
      */
     ~MainWindow();
 
+protected: // Changed to protected to allow overriding paintEvent
+    /**
+     * @brief Gère les événements de peinture pour dessiner l'image de fond.
+     * @param event Événement de peinture.
+     */
+    void paintEvent(QPaintEvent *event) override;
+
 private slots:
     /**
      * @brief Slot appelé lors du clic sur le deuxième bouton poussoir (pushButton_2).
@@ -54,5 +65,6 @@ private slots:
 
 private:
     Ui::MainWindow *ui; ///< Pointeur vers l'objet d'interface utilisateur généré par Qt Designer.
+    QPixmap m_backgroundImage; ///< Image de fond.
 };
 #endif // MAINWINDOW_H

@@ -2,6 +2,9 @@
 #include <QDebug>
 #include <iostream>
 #include <vector>
+#include <QCoreApplication>
+#include <QDir>
+#include <QStandardPaths>
 
 CameraHandler::CameraHandler()
 {
@@ -18,17 +21,56 @@ CameraHandler::~CameraHandler()
 
 bool CameraHandler::loadFaceCascade()
 {
-    QString cascadePath = "/Users/ismail/projet-biblio-multimedia/biblio/assets/fist.xml";
-    if (!faceCascade.load(cascadePath.toStdString()))
-    {
-        cascadePath = "./../../../biblio/assets/fist.xml";
-        if (!faceCascade.load(cascadePath.toStdString()))
-        {
-            qDebug() << "Error: Could not load Haar Cascade from" << cascadePath;
-            return false;
+    QStringList pathsToTry;
+    QString appDir = QCoreApplication::applicationDirPath();
+
+    // Path for macOS bundle (assets inside Resources folder)
+    pathsToTry << appDir + "/../Resources/assets/fist.xml";
+    // Path if assets folder is next to the executable
+    pathsToTry << appDir + "/assets/fist.xml";
+    
+    // Paths relative to current working directory (useful for development/build dir execution)
+    pathsToTry << "assets/fist.xml";
+    pathsToTry << "../assets/fist.xml"; // If executable is in a subfolder like 'bin'
+    pathsToTry << "../../assets/fist.xml";
+    pathsToTry << "biblio/assets/fist.xml"; // If running from project root and executable is in biblio/
+    pathsToTry << "../biblio/assets/fist.xml";
+    pathsToTry << "../../biblio/assets/fist.xml";
+    pathsToTry << "./../../../biblio/assets/fist.xml";
+
+    // Path for when fist.xml is in the same directory as the executable (less likely for 'assets' structure)
+    pathsToTry << appDir + "/fist.xml";
+    pathsToTry << "fist.xml";
+
+
+    for (const QString& cascadePath : pathsToTry) {
+        QFileInfo fileInfo(cascadePath);
+        qDebug() << "Attempting to load Haar Cascade from:" << QDir::cleanPath(fileInfo.absoluteFilePath());
+        if (faceCascade.load(QDir::cleanPath(fileInfo.absoluteFilePath()).toStdString())) {
+            qDebug() << "Successfully loaded Haar Cascade from:" << QDir::cleanPath(fileInfo.absoluteFilePath());
+            return true;
         }
     }
-    return true;
+    
+    // Attempt to locate via Qt Resource system if it were used (example, not active here)
+    // pathsToTry << ":/assets/fist.xml";
+
+    // Final attempt with a path that might be set via an environment variable or a known install location
+    // This part would be specific to deployment strategy if assets are installed system-wide
+    // For example, using QStandardPaths:
+    QString dataLocation = QStandardPaths::locate(QStandardPaths::AppDataLocation, "assets/fist.xml");
+    if (!dataLocation.isEmpty()) {
+         qDebug() << "Attempting to load Haar Cascade from AppDataLocation:" << dataLocation;
+        if (faceCascade.load(dataLocation.toStdString())) {
+            qDebug() << "Successfully loaded Haar Cascade from AppDataLocation:" << dataLocation;
+            return true;
+        }
+    }
+
+
+    qDebug() << "Error: Could not load Haar Cascade ('fist.xml'). All attempted paths failed.";
+    qDebug() << "Ensure 'fist.xml' is present in one of the expected 'assets' directory locations relative to the executable or build directory.";
+    return false;
 }
 
 int CameraHandler::openCamera()
