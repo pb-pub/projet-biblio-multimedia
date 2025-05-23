@@ -12,14 +12,11 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [ubuntu-22.04, macos-13]
+        os: [ubuntu-22.04]
         include:
           - os: ubuntu-22.04
             artifact_name: biblio-linux
             executable_extension: ""
-          - os: macos-13
-            artifact_name: biblio-macos
-            executable_extension: ".app"
 
     runs-on: ${{ matrix.os }}
 
@@ -43,13 +40,6 @@ jobs:
         sudo apt-get install -y libopencv-dev
         sudo apt-get install -y libglu1-mesa-dev freeglut3-dev mesa-common-dev
         sudo apt-get install -y libasound2-dev libpulse-dev
-
-    - name: Install Qt (macOS)
-      if: matrix.os == 'macos-13'
-      run: |
-        brew install qt@6
-        brew install opencv
-        echo "CMAKE_PREFIX_PATH=$(brew --prefix qt@6)" >> $GITHUB_ENV
 
     - name: Configure CMake
       run: |
@@ -75,27 +65,12 @@ jobs:
         chmod +x package/biblio/run.sh
         tar -czf ../biblio-linux.tar.gz -C package .
 
-    - name: Package Application (macOS)
-      if: matrix.os == 'macos-13'
-      run: |
-        cd biblio/build
-        # Deploy Qt dependencies to app bundle
-        macdeployqt biblio.app -dmg
-        mv biblio.dmg ../biblio-macos.dmg
-
     - name: Upload Artifacts (Ubuntu)
       if: matrix.os == 'ubuntu-22.04'
       uses: actions/upload-artifact@v4
       with:
         name: ${{ matrix.artifact_name }}
         path: biblio/biblio-linux.tar.gz
-
-    - name: Upload Artifacts (macOS)
-      if: matrix.os == 'macos-13'
-      uses: actions/upload-artifact@v4
-      with:
-        name: ${{ matrix.artifact_name }}
-        path: biblio/biblio-macos.dmg
 
   release:
     if: github.event_name == 'release'
@@ -113,6 +88,5 @@ jobs:
       with:
         files: |
           artifacts/biblio-linux/biblio-linux.tar.gz
-          artifacts/biblio-macos/biblio-macos.dmg
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
