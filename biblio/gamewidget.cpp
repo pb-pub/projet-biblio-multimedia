@@ -1,4 +1,4 @@
-#ifdef _APPLE_
+#ifdef __APPLE__
 #include <OpenGL/glu.h>
 #else
 #include <GL/glu.h>
@@ -78,7 +78,7 @@ GameWidget::GameWidget(QWidget *parent)
         QFont m_font(fontFamilies.first(), 150);
         label->setFont(m_font);
     }
-
+    m_katana = new Katana();
     // add a label on the center of the window
     label->setAlignment(Qt::AlignCenter);
 
@@ -131,6 +131,12 @@ GameWidget::~GameWidget()
     }
 
     delete cameraHandler;
+
+    if (m_katana)
+    {
+        delete m_katana;
+        m_katana = nullptr;
+    }
 }
 
 void GameWidget::updateFruitDisplay()
@@ -184,8 +190,8 @@ void GameWidget::initializeGL()
 void GameWidget::initializeTextures()
 {
     // Increase array size to include cannon texture
-    textures = new GLuint[7]; // Changed from 6 to 7 to include cannon texture
-    glGenTextures(7, textures);
+    textures = new GLuint[10];
+    glGenTextures(10, textures);
 
     // Get the application directory and build absolute paths
     QDir appDir(QCoreApplication::applicationDirPath());
@@ -200,7 +206,7 @@ void GameWidget::initializeTextures()
         "../assets/textures/",
         "../../assets/textures/",
         "../../../assets/textures/",
-        // Absolute path 
+        // Absolute path
         "/Users/ismail/projet-biblio-multimedia/biblio/assets/textures/"};
 
     QString base_path;
@@ -235,7 +241,10 @@ void GameWidget::initializeTextures()
     QImage pearImage(base_path + "pear.jpg");
     QImage bombImage(base_path + "bomb.jpg");
     QImage floorImage(base_path + "floor.jpg");
-    QImage cannonImage(base_path + "cannon.jpg"); // New cannon texture
+    QImage cannonImage(base_path + "cannon.jpg");
+    QImage bladeImage(base_path + "blade.jpg");
+    QImage handleImage(base_path + "handle.jpg");
+    QImage chainImage(base_path + "chain.jpg");
 
     // Try loading backup textures if original textures failed
     if (appleImage.isNull())
@@ -254,24 +263,30 @@ void GameWidget::initializeTextures()
     bananaImage = bananaImage.convertToFormat(QImage::Format_RGBA8888);
     pearImage = pearImage.convertToFormat(QImage::Format_RGBA8888);
     bombImage = bombImage.convertToFormat(QImage::Format_RGBA8888);
-    floorImage = floorImage.convertToFormat(QImage::Format_RGBA8888);   // Convert floor image
-    cannonImage = cannonImage.convertToFormat(QImage::Format_RGBA8888); // Convert cannon image
+    floorImage = floorImage.convertToFormat(QImage::Format_RGBA8888);
+    cannonImage = cannonImage.convertToFormat(QImage::Format_RGBA8888);
+    bladeImage = bladeImage.convertToFormat(QImage::Format_RGBA8888);
+    handleImage = handleImage.convertToFormat(QImage::Format_RGBA8888);
+    chainImage = chainImage.convertToFormat(QImage::Format_RGBA8888);
 
     // check if images are loaded correctly
     if (appleImage.isNull() || strawberryImage.isNull() || bananaImage.isNull() ||
         pearImage.isNull() || bombImage.isNull() || floorImage.isNull() ||
-        cannonImage.isNull())
+        cannonImage.isNull() || bladeImage.isNull() || handleImage.isNull() || chainImage.isNull())
     {
         qCritical() << "Error loading texture images";
 
         // Create fallback colored textures
-        appleImage = createColorTexture(QColor(255, 0, 0));      // Red for apple
-        strawberryImage = createColorTexture(QColor(255, 165, 0));   // Orange
-        bananaImage = createColorTexture(QColor(255, 255, 0));   // Yellow for banana
-        pearImage = createColorTexture(QColor(0, 255, 0));       // Green for pear
-        bombImage = createColorTexture(QColor(50, 50, 50));      // Dark gray for bomb
-        floorImage = createColorTexture(QColor(0, 0, 255));      // Blue for floor
-        cannonImage = createColorTexture(QColor(100, 100, 100)); // Gray for cannon
+        appleImage = createColorTexture(QColor(255, 0, 0));        // Red for apple
+        strawberryImage = createColorTexture(QColor(255, 165, 0)); // Orange
+        bananaImage = createColorTexture(QColor(255, 255, 0));     // Yellow for banana
+        pearImage = createColorTexture(QColor(0, 255, 0));         // Green for pear
+        bombImage = createColorTexture(QColor(50, 50, 50));        // Dark gray for bomb
+        floorImage = createColorTexture(QColor(0, 0, 255));        // Blue for floor
+        cannonImage = createColorTexture(QColor(100, 100, 100));   // Gray for cannon
+        bladeImage = createColorTexture(QColor(255, 255, 255));    // White for blade
+        handleImage = createColorTexture(QColor(150, 75, 0));      // Brown for handle
+        chainImage = createColorTexture(QColor(128, 128, 128));    // Gray for chain
     }
 
     // Apple Texture
@@ -316,12 +331,34 @@ void GameWidget::initializeTextures()
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
+    // Blade Texture
+    glBindTexture(GL_TEXTURE_2D, textures[7]);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, bladeImage.width(), bladeImage.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, bladeImage.bits());
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    // Handle Texture
+    glBindTexture(GL_TEXTURE_2D, textures[8]);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, handleImage.width(), handleImage.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, handleImage.bits());
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    // Chain Texture
+    glBindTexture(GL_TEXTURE_2D, textures[9]);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, chainImage.width(), chainImage.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, chainImage.bits());
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
     glFlush(); // Ensure texture uploads are finished
     qDebug() << "Texture IDs: " << textures[0] << " " << textures[1] << " " << textures[2] << " "
-             << textures[3] << " " << textures[4] << " " << textures[5] << " " << textures[6];
+             << textures[3] << " " << textures[4] << " " << textures[5] << " " << textures[6]
+             << " " << textures[7] << " " << textures[8] << " " << textures[9];
 
     // Set the cannon texture
     cannon.setTexture(textures[6]);
+
+    // Set the katana texture
+    m_katana->setTextures(textures[7], textures[8], textures[9]);
 }
 
 // Add helper method to create fallback textures
@@ -355,17 +392,17 @@ void GameWidget::startCountdown(int seconds)
     QTimer *countdownTimer = new QTimer(this);
     connect(countdownTimer, &QTimer::timeout, [this, countdownTimer, seconds]() mutable
             {
-        if (seconds > 0) {
-            label->setText(QString::number(seconds));
-            seconds--;
-        } else {
-            countdownTimer->stop();
-            delete countdownTimer;
-            delete label; // Delete the label after countdown
+                if (seconds > 0) {
+                    label->setText(QString::number(seconds));
+                    seconds--;
+                } else {
+                    countdownTimer->stop();
+                    delete countdownTimer;
+                    delete label; // Delete the label after countdown
 
-            // Use the new createFruit function instead of direct creation
-            createFruit();
-        } });
+                    // Use the new createFruit function instead of direct creation
+                    createFruit();
+                } });
     countdownTimer->start(1000); // Update every second
 }
 
@@ -397,8 +434,8 @@ void GameWidget::paintGL()
     glLoadIdentity();
 
     // Set camera position with better positioning for perspective view
-    gluLookAt(0.0f, 1.8f, -1.f,  // Eye position
-                                 // gluLookAt(2.0f, 1.8f, 20.f,        // testing eye position
+    gluLookAt(0.0f, 1.8f, -1.f, // Eye position
+                                // gluLookAt(2.0f, 1.8f, 20.f,        // testing eye position
               0.0f, 1.0f, 25.0f, // Look at position (center)
               0.0f, 1.0f, 0.0f); // Up vector
 
@@ -421,8 +458,8 @@ void GameWidget::paintGL()
     glPushMatrix();
 
     // Set material properties for the floor - adjust for texture
-    GLfloat floor_ambient[] = {0.7f, 0.7f, 0.7f, 1.0f}; 
-    GLfloat floor_diffuse[] = {1.0f, 1.0f, 1.0f, 1.0f};  
+    GLfloat floor_ambient[] = {0.7f, 0.7f, 0.7f, 1.0f};
+    GLfloat floor_diffuse[] = {1.0f, 1.0f, 1.0f, 1.0f};
     GLfloat floor_specular[] = {0.2f, 0.2f, 0.2f, 1.0f};
     glMaterialfv(GL_FRONT, GL_AMBIENT, floor_ambient);
     glMaterialfv(GL_FRONT, GL_DIFFUSE, floor_diffuse);
@@ -436,11 +473,11 @@ void GameWidget::paintGL()
 
     // Draw the main ground plane with texture
     glBegin(GL_QUADS);
-    glNormal3f(0.0f, 1.0f, 0.0f); 
+    glNormal3f(0.0f, 1.0f, 0.0f);
 
-    const float textureRepetition = 20.0f; 
+    const float textureRepetition = 20.0f;
 
-    // Add texture coordinates to the ground quad 
+    // Add texture coordinates to the ground quad
     glTexCoord2f(0.0f, 0.0f);
     glVertex3f(-MAX_DIMENSION, 0.0f, -MAX_DIMENSION);
     glTexCoord2f(textureRepetition, 0.0f);
@@ -504,30 +541,28 @@ void GameWidget::paintGL()
         }
     }
 
-    // Draw a small ball at the projected point if it exists
-    if (hasProjectedPoint)
+    if (!m_katana)
     {
-        glPushMatrix();
-
-        // Set material for the ball (bright red)
-        GLfloat ball_ambient[] = {0.5f, 0.0f, 0.0f, 1.0f};
-        GLfloat ball_diffuse[] = {1.0f, 0.0f, 0.0f, 1.0f};
-        GLfloat ball_specular[] = {1.0f, 0.5f, 0.5f, 1.0f};
-        glMaterialfv(GL_FRONT, GL_AMBIENT, ball_ambient);
-        glMaterialfv(GL_FRONT, GL_DIFFUSE, ball_diffuse);
-        glMaterialfv(GL_FRONT, GL_SPECULAR, ball_specular);
-        glMaterialf(GL_FRONT, GL_SHININESS, 50.0f);
-
-        // Move to the projected point
-        glTranslatef(projectedPoint.x(), projectedPoint.y(), projectedPoint.z());
-
-        GLUquadric *ball = gluNewQuadric();
-        gluQuadricDrawStyle(ball, GLU_FILL);
-        gluSphere(ball, 0.05f, 16, 16);
-        gluDeleteQuadric(ball);
-
-        glPopMatrix();
+        m_katana = new Katana();
+        m_katana->setTextures(textures[7], textures[8], textures[9]);
     }
+
+    // Sauvegarder l'état de la matrice
+    glPushMatrix();
+
+    // Réinitialiser les transformations
+    glLoadIdentity();
+
+    // Appliquer la même vue caméra que pour le reste de la scène
+    gluLookAt(0.0f, 1.8f, -1.f,  // Eye position
+              0.0f, 1.0f, 25.0f, // Look at position
+              0.0f, 1.0f, 0.0f); // Up vector
+
+    // Dessiner le katana
+    m_katana->draw(projectedPoint);
+
+    // Restaurer l'état de la matrice
+    glPopMatrix();
 
     // Display camera feed in top-left corner
     if (displayCamera && cameraInitialized && !currentFrame.empty() && ui->openGLWidget)
@@ -625,51 +660,17 @@ void GameWidget::updateFrame()
     // Get new frame from camera
     if (cameraHandler->getFrame(currentFrame))
     {
-        // Convert to grayscale for face detection
         cv::cvtColor(currentFrame, grayFrame, cv::COLOR_BGR2GRAY);
-
-        // Detect faces
         std::vector<cv::Point> detectedPoints = cameraHandler->detectFaces(currentFrame, grayFrame, false);
 
-        // Check if any detected point intersects with fruits
-        QTime currentTime = QTime::currentTime();
+        // S'assurer que hasProjectedPoint est mis à false si aucun point n'est détecté
+        hasProjectedPoint = false;
 
         for (const auto &point : detectedPoints)
         {
-
-            for (auto fruit : m_fruit)
-            {
-                if (!fruit->isCut() && isFruitHit(point, fruit, currentTime))
-                {
-                    QVector3D fruitCenter = fruit->getPosition(currentTime);
-
-                    // random cut normal
-                    float nx = (rand() % 200 - 100) / 100.0f;
-                    float ny = (rand() % 200 - 100) / 100.0f;
-                    float nz = 0.f;
-                    QVector3D cutNormal(nx, ny, nz);
-                    if (cutNormal.lengthSquared() < 0.01f)
-                    {
-                        cutNormal = QVector3D(1.0f, 0.0f, 0.0f);
-                    }
-                    cutNormal.normalize();
-
-                    fruit->cut(fruitCenter, cutNormal, currentTime);
-
-                    if (fruit->isBomb())
-                    {
-                        emit lifeDecrease();
-                    }
-                    else
-                    {
-                        emit scoreIncreased();
-                        if (m_sliceSound->isLoaded())
-                        {
-                            m_sliceSound->play();
-                        }
-                    }
-                }
-            }
+            float gameX, gameZ;
+            convertCameraPointToGameSpace(point, gameX, gameZ);
+            hasProjectedPoint = true;
         }
 
         update();
@@ -708,14 +709,36 @@ bool GameWidget::isFruitHit(const cv::Point &point, Fruit *fruit, QTime currentT
     // Get fruit position
     QVector3D fruitPos = fruit->getPosition(currentTime);
 
-    // Calculate distance in 3D space using the projected point
-    float dx = projectedPoint.x() - fruitPos.x();
-    float dy = projectedPoint.y() - fruitPos.y();
-    float dz = projectedPoint.z() - fruitPos.z();
-    float distance = sqrt(dx * dx + dy * dy + dz * dz);
+    // Position de la lame du katana avec une hitbox plus grande
+    float bladeTipY = projectedPoint.y() + 2.5f;  // Augmenté pour une meilleure portée verticale
+    float bladeBaseY = projectedPoint.y() - 0.8f; // Augmenté pour une meilleure portée vers le bas
 
-    // Check if distance is less than combined radii (0.5 for fruit + 0.15 for ball = 0.65)
-    return distance < 0.65f && fruitPos.y() > 0.5f; // Only count hits when fruit is above ground
+    // Distance horizontale entre le fruit et la lame
+    float dx = projectedPoint.x() - fruitPos.x();
+    float dz = projectedPoint.z() - fruitPos.z();
+    float horizontalDist = sqrt(dx * dx + dz * dz);
+
+    // Zone de détection verticale plus généreuse
+    bool isInBladeHeight = fruitPos.y() >= (bladeBaseY - 0.8f) && fruitPos.y() <= (bladeTipY + 0.8f);
+
+    // Hitbox horizontale beaucoup plus large
+    float hitboxRadius = 2.0f; // Augmenté significativement
+
+    // Debug des positions
+    qDebug() << "Fruit position:" << fruitPos;
+    qDebug() << "Katana position:" << projectedPoint;
+    qDebug() << "Distance:" << horizontalDist;
+    qDebug() << "Height check:" << isInBladeHeight;
+
+    // Vérification de la collision avec conditions plus souples
+    bool isHit = isInBladeHeight && horizontalDist < hitboxRadius && fruitPos.y() > 0.1f;
+
+    if (isHit)
+    {
+        qDebug() << "HIT!";
+    }
+
+    return isHit;
 }
 
 void GameWidget::keyPressEvent(QKeyEvent *event)

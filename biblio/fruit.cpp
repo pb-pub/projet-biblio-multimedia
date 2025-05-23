@@ -470,7 +470,7 @@ void Fruit::drawBomb(QTime currentTime, float firstPart)
 QVector3D Fruit::getPosition(QTime currentTime, float firstPart)
 {
     // Calculate the position of the fruit based on its trajectory
-    float slowdownFactor = 1.5f;
+    float slowdownFactor = 3.f;
     float deltaT = startTime.msecsTo(currentTime) / 1000.0f;
     deltaT /= slowdownFactor; // Slow down the fruit's fall speed
 
