@@ -63,6 +63,12 @@ private slots:
      */
     void on_pushButton_clicked();
 
+    /**
+     * @brief Slot appelé lors du clic sur le troisième bouton poussoir (pushButton_3).
+     * Permet d'ouvrir le rapport.
+     */
+    void on_pushButton_3_clicked();
+
 private:
     Ui::MainWindow *ui; ///< Pointeur vers l'objet d'interface utilisateur généré par Qt Designer.
     QPixmap m_backgroundImage; ///< Image de fond.

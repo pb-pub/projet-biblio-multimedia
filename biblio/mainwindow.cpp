@@ -5,6 +5,9 @@
 #include <QDir>
 #include <QDebug>
 #include <QCoreApplication>
+#include <QDesktopServices>
+#include <QUrl>
+#include <QMessageBox>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -119,5 +122,42 @@ void MainWindow::on_pushButton_clicked()
     this->close();
     SettingsWindow* settingsWindow = new SettingsWindow();
     settingsWindow->show();
+}
+
+
+void MainWindow::on_pushButton_3_clicked()
+{
+    // Chercher le fichier PDF dans les dossiers assets
+    QStringList possiblePdfPaths = {
+        QCoreApplication::applicationDirPath() + "/../../../biblio/assets/Rapport_BDM.pdf",
+        "./assets/Rapport_BDM.pdf",
+        "../assets/Rapport_BDM.pdf",
+        "../../assets/Rapport_BDM.pdf",
+        "../../../assets/Rapport_BDM.pdf"
+    };
+    
+    QString pdfPath;
+    bool foundPdfPath = false;
+    for (const auto &path : possiblePdfPaths) {
+        if (QFile::exists(path)) {
+            pdfPath = path;
+            foundPdfPath = true;
+            qDebug() << "Found PDF path: " << pdfPath;
+            break;
+        }
+    }
+
+    if (foundPdfPath) {
+        QUrl pdfUrl = QUrl::fromLocalFile(QFileInfo(pdfPath).absoluteFilePath());
+        if (!QDesktopServices::openUrl(pdfUrl)) {
+            QMessageBox::warning(this, "Erreur", "Impossible d'ouvrir le fichier PDF.\nVérifiez qu'un lecteur PDF est installé.");
+        }
+    } else {
+        QMessageBox::information(this, "Fichier non trouvé", "Le fichier PDF n'a pas été trouvé dans le dossier assets.");
+        qDebug() << "PDF file not found. Tried paths:";
+        for (const auto &path : possiblePdfPaths) {
+            qDebug() << " - " << path;
+        }
+    }
 }
 
